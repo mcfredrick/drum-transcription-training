@@ -1,0 +1,142 @@
+# Training Configuration for Drum Transcription Model
+
+# Dataset paths (on HDD for large data)
+data:
+  egmd_root: "/mnt/hdd/drum-tranxn/e-gmd-v1.0.0"  # Raw E-GMD dataset
+  processed_root: "/mnt/hdd/drum-tranxn/processed_data"  # Preprocessed spectrograms and labels
+  splits_dir: "/mnt/hdd/drum-tranxn/processed_data/splits"  # Train/val/test split files
+  train_split: 0.7
+  val_split: 0.15
+  test_split: 0.15
+  random_seed: 42
+
+# Audio preprocessing
+audio:
+  sample_rate: 22050
+  n_fft: 2048
+  hop_length: 512  # ~23ms frames (43 FPS)
+  n_mels: 128
+  fmin: 30  # Hz - captures kick fundamentals
+  fmax: 11025  # Nyquist frequency
+  
+# Model architecture
+model:
+  name: "DrumTranscriptionCRNN"
+  n_mels: 128
+  n_classes: 8
+  conv_filters: [32, 64, 128]  # CNN encoder filters
+  conv_kernel_size: 3
+  pool_size: 2
+  dropout_cnn: 0.25
+  hidden_size: 128  # GRU hidden units
+  num_gru_layers: 3
+  dropout_gru: 0.3
+  bidirectional: true
+
+# Training hyperparameters
+training:
+  batch_size: 16
+  num_epochs: 100
+  learning_rate: 0.001
+  weight_decay: 0.0001
+  optimizer: "Adam"  # Adam, AdamW, or SGD
+  scheduler: "ReduceLROnPlateau"  # ReduceLROnPlateau or CosineAnnealing
+  scheduler_patience: 10
+  scheduler_factor: 0.5
+  gradient_clip_val: 1.0
+  precision: "16-mixed"  # Use mixed precision training
+  accumulate_grad_batches: 1
+  
+# Data augmentation
+augmentation:
+  enabled: true
+  time_stretch_prob: 0.5
+  time_stretch_range: [0.9, 1.1]
+  pitch_shift_prob: 0.5
+  pitch_shift_range: [-2, 2]  # semitones
+  volume_scale_prob: 0.5
+  volume_scale_range: [-6, 6]  # dB
+  reverb_prob: 0.3
+  reverb_delay_range: [1, 3]  # frames
+  reverb_attenuation_range: [0.2, 0.4]
+  noise_prob: 0.3
+  noise_level_range: [0.01, 0.05]
+
+# Loss function
+loss:
+  type: "BCELoss"  # BCELoss or FocalLoss
+  focal_alpha: 0.25  # Only used if FocalLoss
+  focal_gamma: 2.0   # Only used if FocalLoss
+  class_weights: null  # Optional: [w1, w2, ..., w8] for class imbalance
+
+# Early stopping
+early_stopping:
+  enabled: true
+  monitor: "val_loss"
+  patience: 20
+  mode: "min"
+  min_delta: 0.001
+
+# Checkpointing (saved to HDD)
+checkpoint:
+  monitor: "val_loss"
+  save_top_k: 3
+  mode: "min"
+  save_last: true
+  dirpath: "/mnt/hdd/drum-tranxn/checkpoints"
+  filename: "drum-transcription-{epoch:02d}-{val_loss:.4f}"
+
+# Logging (saved to HDD)
+logging:
+  logger: "wandb"  # wandb or tensorboard
+  project_name: "drum-transcription"
+  experiment_name: "crnn-egmd-baseline"
+  log_every_n_steps: 10
+  save_dir: "/mnt/hdd/drum-tranxn/logs"
+
+# Hardware
+hardware:
+  devices: [0, 1]  # GPU IDs to use (both 3070 and 3090)
+  num_workers: 4  # Data loader workers per GPU
+  accelerator: "gpu"
+  
+# Post-processing (for inference)
+postprocessing:
+  onset_threshold: 0.5  # Probability threshold for onset detection
+  min_onset_interval: 0.05  # Minimum time between onsets (seconds)
+  peak_min_distance: 2  # Minimum distance between peaks (frames)
+
+# General MIDI drum mapping
+midi:
+  drum_names: ["kick", "snare", "hihat", "hi_tom", "mid_tom", "low_tom", "crash", "ride"]
+  gm_mapping:
+    kick: 36      # Bass Drum 1
+    snare: 38     # Acoustic Snare
+    hihat: 42     # Closed Hi-Hat
+    hi_tom: 50    # High Tom
+    mid_tom: 47   # Low-Mid Tom
+    low_tom: 45   # Low Tom
+    crash: 49     # Crash Cymbal 1
+    ride: 51      # Ride Cymbal 1
+  default_velocity: 80
+  note_duration_ticks: 50  # MIDI ticks for note off
+
+# E-GMD MIDI note mapping to classes
+egmd_midi_mapping:
+  36: 0  # Kick
+  38: 1  # Snare
+  42: 2  # Closed Hi-Hat (also 44, 46 for pedal/open)
+  44: 2  # Pedal Hi-Hat -> Hi-Hat
+  46: 2  # Open Hi-Hat -> Hi-Hat
+  50: 3  # High Tom
+  47: 4  # Mid Tom (Low-Mid Tom)
+  48: 4  # Mid Tom (Hi-Mid Tom) -> Mid Tom
+  45: 5  # Low Tom
+  41: 5  # Floor Tom -> Low Tom
+  43: 5  # Floor Tom (high) -> Low Tom
+  49: 6  # Crash Cymbal 1
+  55: 6  # Splash Cymbal -> Crash
+  57: 6  # Crash Cymbal 2 -> Crash
+  51: 7  # Ride Cymbal 1
+  53: 7  # Ride Bell -> Ride
+  59: 7  # Ride Cymbal 2 -> Ride

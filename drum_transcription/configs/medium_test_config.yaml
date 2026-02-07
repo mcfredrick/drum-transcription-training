@@ -1,0 +1,147 @@
+# Medium test configuration for drum transcription pipeline
+# This uses 500 files and 10 epochs for meaningful progress validation
+
+data:
+  # E-GMD dataset paths (on HDD)
+  egmd_root: "/mnt/hdd/drum-tranxn/e-gmd-v1.0.0"
+  processed_root: "/mnt/hdd/drum-tranxn/processed_data"
+  splits_dir: "/mnt/hdd/drum-tranxn/processed_data/splits"
+  
+  # For medium test - 500 files (25x more than quick test)
+  max_files: 500
+  
+  # Train/val/test split ratios
+  train_split: 0.7
+  val_split: 0.15
+  test_split: 0.15
+  random_seed: 42
+
+# Audio preprocessing (same as test config)
+audio:
+  sample_rate: 22050
+  n_fft: 2048
+  hop_length: 512
+  n_mels: 128
+  fmin: 30
+  fmax: 11025
+
+model:
+  # CRNN architecture (same as test config)
+  name: "DrumTranscriptionCRNN"
+  n_mels: 128
+  n_classes: 8  # kick, snare, hihat, hi_tom, mid_tom, low_tom, crash, ride
+  
+  # CNN parameters
+  conv_filters: [32, 64, 128]
+  conv_kernel_size: 3
+  pool_size: 2
+  dropout_cnn: 0.25
+  
+  # RNN parameters
+  hidden_size: 128
+  num_gru_layers: 2
+  dropout_gru: 0.3
+  bidirectional: true
+
+training:
+  # Medium test settings
+  num_epochs: 10  # 5x more than quick test
+  batch_size: 8   # 2x larger than quick test for better GPU utilization
+  learning_rate: 0.001
+  weight_decay: 0.0001
+  optimizer: "Adam"
+  scheduler: "ReduceLROnPlateau"
+  scheduler_patience: 5
+  scheduler_factor: 0.5
+  
+  # Optimization
+  gradient_clip_val: 1.0
+  accumulate_grad_batches: 1
+  precision: "16-mixed"  # Mixed precision for faster training
+
+augmentation:
+  enabled: false  # Disable for consistent evaluation
+  time_stretch_prob: 0.0
+  pitch_shift_prob: 0.0
+  volume_scale_prob: 0.0
+  reverb_prob: 0.0
+  noise_prob: 0.0
+  
+# Loss function
+loss:
+  type: "BCELoss"
+  class_weights: null
+
+# Early stopping - DISABLED for medium test
+# Reasoning: We want to run full 10 epochs to observe learning trajectory
+# Early stopping could terminate prematurely before we see the full picture
+early_stopping:
+  enabled: false
+  monitor: "val_loss"
+  patience: 5
+  mode: "min"
+  min_delta: 0.0
+
+# Checkpointing
+checkpoint:
+  monitor: "val_loss"
+  save_top_k: 3  # Save top 3 checkpoints
+  mode: "min"
+  save_last: true  # Always save last checkpoint for resuming
+  dirpath: "/mnt/hdd/drum-tranxn/checkpoints"
+  filename: "medium-test-{epoch:02d}-{val_loss:.4f}"
+
+# Logging
+logging:
+  logger: "tensorboard"
+  project_name: "drum-transcription-medium-test"
+  experiment_name: "medium-test-10epoch-500files"
+  log_every_n_steps: 10
+  save_dir: "/mnt/hdd/drum-tranxn/logs"
+
+# Hardware
+hardware:
+  devices: [0]  # Single GPU (3070) for test
+  num_workers: 4  # More workers than quick test
+  accelerator: "gpu"
+  
+postprocessing:
+  # Onset detection thresholds
+  onset_threshold: 0.5
+  min_onset_interval: 0.05  # 50ms minimum between onsets
+  peak_min_distance: 2
+
+# General MIDI drum mapping
+midi:
+  drum_names: ["kick", "snare", "hihat", "hi_tom", "mid_tom", "low_tom", "crash", "ride"]
+  gm_mapping:
+    kick: 36
+    snare: 38
+    hihat: 42
+    hi_tom: 50
+    mid_tom: 47
+    low_tom: 45
+    crash: 49
+    ride: 51
+  default_velocity: 80
+  note_duration_ticks: 50
+
+# E-GMD MIDI note mapping to classes
+egmd_midi_mapping:
+  36: 0  # Kick
+  38: 1  # Snare
+  42: 2  # Hi-hat (closed)
+  44: 2  # Pedal Hi-Hat -> Hi-Hat
+  46: 2  # Open Hi-Hat -> Hi-Hat
+  50: 3  # High Tom
+  47: 4  # Mid Tom
+  48: 4  # Hi-Mid Tom -> Mid Tom
+  45: 5  # Low Tom
+  41: 5  # Floor Tom -> Low Tom
+  43: 5  # Floor Tom (high) -> Low Tom
+  49: 6  # Crash
+  55: 6  # Splash Cymbal -> Crash
+  57: 6  # Crash Cymbal 2 -> Crash
+  51: 7  # Ride
+  53: 7  # Ride Bell -> Ride
+  59: 7  # Ride Cymbal 2 -> Ride
