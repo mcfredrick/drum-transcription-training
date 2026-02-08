@@ -1,6 +1,6 @@
  # Drum Transcription Training Pipeline
 
-A comprehensive deep learning pipeline for training drum transcription models using the Enhanced Groove MIDI Dataset (E-GMD). This project implements a CRNN (Convolutional Recurrent Neural Network) architecture for converting audio drum performances into MIDI transcriptions.
+A comprehensive deep learning pipeline for training drum transcription models using the Enhanced Groove MIDI Dataset (E-GMD). This project implements a CRNN (Convolutional Recurrent Neural Network) architecture for converting audio drum performances into MIDI transcriptions with **Roland TD-17 mapping**.
 
 ## 🚀 Quick Start
 
@@ -15,13 +15,15 @@ cd drum_transcription
 # Install dependencies
 uv sync
 
-# Download and preprocess E-GMD dataset
+# Download and preprocess E-GMD dataset with Roland mapping
 mkdir -p data/e-gmd
 wget http://storage.googleapis.com/magentadata/datasets/e-gmd/v1.0.0/e-gmd-v1.0.0.zip
 unzip e-gmd-v1.0.0.zip -d data/e-gmd/
-uv run python scripts/preprocess_egmd.py --use-hdf5
 
-# Start training
+# Preprocess with Roland TD-17 mapping (26 classes)
+uv run python scripts/preprocess_roland.py --use-hdf5
+
+# Start training with Roland model
 uv run python scripts/train.py --config configs/default_config.yaml
 ```
 
@@ -43,7 +45,10 @@ drum-transcription-training/
 
 ## 🎯 Features
 
-- **8-class drum transcription**: kick, snare, hi-hat, hi-tom, mid-tom, low-tom, crash, ride
+- **26-class drum transcription** with Roland TD-17 standard
+- **Individual drum sounds**: kick, snare head/rim/x-stick, 4 toms (head/rim), hi-hats (bow/edge/pedal/open), multiple cymbals, percussion
+- **Roland-specific notes**: hi-hat edge triggers, cymbal edge/bow distinctions
+- **Enhanced expressiveness**: 225% more drum types than legacy 8-class systems
 - **State-of-the-art CRNN architecture** with PyTorch Lightning
 - **Multi-GPU training** support with automatic device detection
 - **Comprehensive data augmentation**: time stretch, pitch shift, reverb, noise
@@ -98,10 +103,11 @@ uv run python scripts/train.py --resume checkpoints/last.ckpt
 ```
 
 ### Available Configurations
+- `default_config.yaml` - Roland TD-17 mapping (26 classes) - **Recommended**
+- `roland_config.yaml` - Alternative Roland configuration
 - `test_config.yaml` - Quick development run (1 batch)
 - `medium_test_config.yaml` - Medium-scale training
 - `full_training_config.yaml` - Complete training pipeline
-- `default_config.yaml` - Balanced configuration
 
 ### Monitoring Training
 Training automatically logs to Weights & Biases:
@@ -109,14 +115,13 @@ Training automatically logs to Weights & Biases:
 # Login to W&B
 uv run wandb login
 
-# View training progress at: https://wandb.ai/your-username/drum-transcription
+# View training progress at: https://wandb.ai/your-username/drum-transcription-roland
 ```
 
 ## 🎵 Inference
 
-Once trained, use the model for transcription:
 ```bash
-# Transcribe audio to MIDI
+# Transcribe audio to MIDI with Roland mapping
 uv run python scripts/transcribe.py \
     input_audio.wav \
     output_midi.mid \
@@ -125,13 +130,35 @@ uv run python scripts/transcribe.py \
 
 ## 📈 Performance
 
-Based on E-GMD dataset benchmarks:
-- **Overall F-measure**: 70-80%
-- **Kick/Hi-hat**: 85-90% F-measure
-- **Snare**: 80-85% F-measure
-- **Toms/Cymbals**: 65-75% F-measure
+Based on E-GMD dataset benchmarks with Roland TD-17 mapping:
+- **Target Macro F-measure**: 80-85%
+- **Core drums (kick, snare, hi-hat)**: 85-90% F-measure
+- **Toms (all 8 variants)**: 75-80% F-measure
+- **Cymbals (all 6 variants)**: 70-75% F-measure
+- **Percussion (tambourine, cowbell)**: 65-70% F-measure
 
-Training time: ~2-3 days for 100 epochs on RTX 3090
+Training time: ~3-4 days for 150 epochs on RTX 3090
+
+## 🔄 Roland TD-17 Mapping
+
+The project uses Roland TD-17 electronic drum kit mapping for professional-grade drum transcription:
+
+### Key Benefits
+- **225% more drum types** (26 vs 8 classes)
+- **Roland TD-17 compatibility** for electronic drums
+- **Enhanced expressiveness** with edge/rim distinctions
+- **Professional-grade output** matching industry standards
+
+### Drum Classes
+| Category | Classes |
+|----------|---------|
+| Core Drums | kick, snare_head, snare_xstick, snare_rim |
+| Toms | tom1-4 (head/rim variants) |
+| Hi-Hats | closed/open (bow/edge), pedal |
+| Cymbals | crash1/2 (bow/edge), ride (bow/edge/bell) |
+| Percussion | tambourine, cowbell |
+
+See [`MIDI_MAPPING_STANDARD_ANALYSIS.md`](MIDI_MAPPING_STANDARD_ANALYSIS.md) for detailed mapping information.
 
 ## 🤝 Contributing
 

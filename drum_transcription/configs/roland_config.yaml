@@ -1,67 +1,56 @@
-# Full training configuration for drum transcription pipeline - Roland TD-17 Mapping
-# This uses ALL files and optimized hyperparameters from Optuna study
+# Training Configuration for Drum Transcription Model - Roland TD-17 Mapping
 
+# Dataset paths (on HDD for large data)
 data:
-  # E-GMD dataset paths (on HDD)
-  egmd_root: "/mnt/hdd/drum-tranxn/e-gmd-v1.0.0"
-  processed_root: "/mnt/hdd/drum-tranxn/processed_data_roland"
-  splits_dir: "/mnt/hdd/drum-tranxn/processed_data_roland/splits"
-  
-  # Full training - use all files
-  max_files: null
-  
-  # Train/val/test split ratios
+  egmd_root: "/mnt/hdd/drum-tranxn/e-gmd-v1.0.0"  # Raw E-GMD dataset
+  processed_root: "/mnt/hdd/drum-tranxn/processed_data_roland"  # Preprocessed spectrograms and labels (Roland mapping)
+  splits_dir: "/mnt/hdd/drum-tranxn/processed_data_roland/splits"  # Train/val/test split files
   train_split: 0.7
   val_split: 0.15
   test_split: 0.15
   random_seed: 42
   midi_mapping: "roland"  # Use Roland TD-17 mapping
 
-# Audio preprocessing (same as test config)
+# Audio preprocessing
 audio:
   sample_rate: 22050
   n_fft: 2048
-  hop_length: 512
+  hop_length: 512  # ~23ms frames (43 FPS)
   n_mels: 128
-  fmin: 30
-  fmax: 11025
-
+  fmin: 30  # Hz - captures kick fundamentals
+  fmax: 11025  # Nyquist frequency
+  
+# Model architecture
 model:
-  # CRNN architecture - Roland TD-17 (26 drum classes)
   name: "DrumTranscriptionCRNN_Roland"
   n_mels: 128
   n_classes: 26  # 26 Roland drum classes (0-25)
-  
-  # CNN parameters
   conv_filters: [32, 64, 128, 256]  # Additional CNN layer for more classes
   conv_kernel_size: 3
   pool_size: 2
   dropout_cnn: 0.3  # Increased dropout for larger model
-  
-  # RNN parameters
   hidden_size: 256  # Larger GRU for more classes
   num_gru_layers: 3
   dropout_gru: 0.4  # Increased dropout
   bidirectional: true
 
+# Training hyperparameters
 training:
-  # Full training settings - Optimized hyperparameters from Optuna study
-  num_epochs: 150
-  batch_size: 4  # Best from Optuna
-  learning_rate: 0.00044547593667580503  # Best from Optuna
-  optimizer: AdamW  # Best from Optuna
-  weight_decay: 5.559904341261682e-05  # Best from Optuna
+  batch_size: 12  # Smaller batch size for larger model
+  num_epochs: 150  # More epochs for convergence
+  learning_rate: 0.0008  # Slightly lower learning rate
+  weight_decay: 0.0001
+  optimizer: "AdamW"  # AdamW for better generalization
   scheduler: "ReduceLROnPlateau"
   scheduler_patience: 15  # More patience for larger model
   scheduler_factor: 0.5
-  
-  # Optimization
   gradient_clip_val: 1.0
+  precision: "16-mixed"  # Use mixed precision training
   accumulate_grad_batches: 2  # Gradient accumulation for effective larger batch
-  precision: "16-mixed"  # Mixed precision for faster training
-
+  
+# Data augmentation
 augmentation:
-  enabled: true  # Enable augmentation for better generalization
+  enabled: true
   time_stretch_prob: 0.5
   time_stretch_range: [0.9, 1.1]
   pitch_shift_prob: 0.5
@@ -73,48 +62,50 @@ augmentation:
   reverb_attenuation_range: [0.2, 0.4]
   noise_prob: 0.3
   noise_level_range: [0.01, 0.05]
-  
+
 # Loss function
 loss:
-  type: "BCELoss"
-  class_weights: null
+  type: "BCELoss"  # Multi-label binary crossentropy
+  focal_alpha: 0.25  # Only used if FocalLoss
+  focal_gamma: 2.0   # Only used if FocalLoss
+  class_weights: null  # Optional: [w1, w2, ..., w26] for class imbalance
 
-# Early stopping - optimized for full training
+# Early stopping
 early_stopping:
   enabled: true
   monitor: "val_loss"
-  patience: 25
+  patience: 25  # More patience for larger model
   mode: "min"
-  min_delta: 0.0005
+  min_delta: 0.001
 
-# Checkpointing
+# Checkpointing (saved to HDD)
 checkpoint:
   monitor: "val_loss"
-  save_top_k: 5  # Save top 5 checkpoints
+  save_top_k: 3
   mode: "min"
-  save_last: true  # Always save last checkpoint for resuming
+  save_last: true
   dirpath: "/mnt/hdd/drum-tranxn/checkpoints_roland"
-  filename: "roland-full-training-{epoch:02d}-{val_loss:.4f}"
+  filename: "drum-transcription-roland-{epoch:02d}-{val_loss:.4f}"
 
-# Logging
+# Logging (saved to HDD)
 logging:
-  logger: "tensorboard"
-  project_name: "drum-transcription-roland-full"
-  experiment_name: "roland-full-training-150epoch-optuna-optimized"
+  logger: "wandb"  # wandb or tensorboard
+  project_name: "drum-transcription-roland"
+  experiment_name: "crnn-roland-egmd-v1"
   log_every_n_steps: 10
   save_dir: "/mnt/hdd/drum-tranxn/logs_roland"
 
 # Hardware
 hardware:
-  devices: [0]  # Single GPU (3070) for test
-  num_workers: 4  # More workers than quick test
+  devices: [0, 1]  # GPU IDs to use (both 3070 and 3090)
+  num_workers: 4  # Data loader workers per GPU
   accelerator: "gpu"
   
+# Post-processing (for inference)
 postprocessing:
-  # Onset detection thresholds
-  onset_threshold: 0.5
-  min_onset_interval: 0.05  # 50ms minimum between onsets
-  peak_min_distance: 2
+  onset_threshold: 0.5  # Probability threshold for onset detection
+  min_onset_interval: 0.05  # Minimum time between onsets (seconds)
+  peak_min_distance: 2  # Minimum distance between peaks (frames)
 
 # Roland TD-17 drum mapping
 roland_midi:
@@ -193,4 +184,4 @@ roland_midi:
     25: 56  # Cowbell
     
   default_velocity: 80
-  note_duration_ticks: 50
+  note_duration_ticks: 50  # MIDI ticks for note off

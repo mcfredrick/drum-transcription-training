@@ -5,8 +5,8 @@ from .midi_processing import (
     midi_to_frame_labels,
     extract_drum_onsets,
     create_midi_from_onsets,
-    get_egmd_drum_mapping,
-    get_gm_drum_mapping,
+    get_drum_mapping,
+    get_drum_name_mapping,
     get_drum_names
 )
 from .augmentation import DrumAugmentation, NoAugmentation
@@ -19,8 +19,8 @@ __all__ = [
     'midi_to_frame_labels',
     'extract_drum_onsets',
     'create_midi_from_onsets',
-    'get_egmd_drum_mapping',
-    'get_gm_drum_mapping',
+    'get_drum_mapping',
+    'get_drum_name_mapping',
     'get_drum_names',
     'DrumAugmentation',
     'NoAugmentation',

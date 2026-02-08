@@ -2,9 +2,9 @@
 # This uses a small subset of data and reduced training for fast validation
 
 data:
-  # E-GMD dataset paths (on HDD)
+  # E-GMD dataset paths (on HDD) - Use Roland processed data
   egmd_root: "/mnt/hdd/drum-tranxn/e-gmd-v1.0.0"
-  processed_root: "/mnt/hdd/drum-tranxn/processed_data"
+  processed_root: "/mnt/hdd/drum-tranxn/processed_data"  # This has Roland mapping
   splits_dir: "/mnt/hdd/drum-tranxn/processed_data/splits"
   
   # For quick test - only use a small subset
@@ -26,21 +26,17 @@ audio:
   fmax: 11025
 
 model:
-  # CRNN architecture
+  # CRNN architecture - Updated for 26 Roland classes
   name: "DrumTranscriptionCRNN"
   n_mels: 128
-  n_classes: 8  # kick, snare, hihat, hi_tom, mid_tom, low_tom, crash, ride
-  
-  # CNN parameters
-  conv_filters: [32, 64, 128]
+  n_classes: 26  # Updated to 26 Roland drum classes
+  conv_filters: [32, 64, 128, 256]  # Additional CNN layer for more classes
   conv_kernel_size: 3
   pool_size: 2
-  dropout_cnn: 0.25
-  
-  # RNN parameters
-  hidden_size: 128
-  num_gru_layers: 2  # Reduced for quick test
-  dropout_gru: 0.3
+  dropout_cnn: 0.3  # Increased dropout for larger model
+  hidden_size: 256  # Larger GRU for more classes
+  num_gru_layers: 3
+  dropout_gru: 0.4  # Increased dropout
   bidirectional: true
 
 training:

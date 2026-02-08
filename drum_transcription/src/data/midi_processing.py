@@ -137,62 +137,105 @@ def create_midi_from_onsets(
     midi.write(output_path)
 
 
-def get_egmd_drum_mapping() -> Dict[int, int]:
+def get_drum_mapping() -> Dict[int, int]:
     """
-    Get E-GMD MIDI note to drum class mapping.
+    Get Roland TD-17 MIDI note to drum class mapping.
+    Based on Roland TD-17 default mapping used in E-GMD dataset.
     
     Returns:
         Dictionary mapping MIDI note numbers to drum class indices
-        0: kick, 1: snare, 2: hihat, 3: hi_tom, 4: mid_tom, 
-        5: low_tom, 6: crash, 7: ride
+        Covers 26 drum classes found in the E-GMD dataset
     """
     return {
+        # Core drums (GM compatible)
         36: 0,  # Kick
-        38: 1,  # Snare
-        42: 2,  # Closed Hi-Hat
-        44: 2,  # Pedal Hi-Hat -> Hi-Hat
-        46: 2,  # Open Hi-Hat -> Hi-Hat
-        50: 3,  # High Tom
-        47: 4,  # Mid Tom (Low-Mid Tom)
-        48: 4,  # Mid Tom (Hi-Mid Tom) -> Mid Tom
-        45: 5,  # Low Tom
-        41: 5,  # Floor Tom -> Low Tom
-        43: 5,  # Floor Tom (high) -> Low Tom
-        49: 6,  # Crash Cymbal 1
-        55: 6,  # Splash Cymbal -> Crash
-        57: 6,  # Crash Cymbal 2 -> Crash
-        51: 7,  # Ride Cymbal 1
-        53: 7,  # Ride Bell -> Ride
-        59: 7,  # Ride Cymbal 2 -> Ride
+        38: 1,  # Snare Head
+        37: 2,  # Snare X-Stick/Side Stick
+        40: 3,  # Snare Rim/Hi Floor Tom
+        
+        # Toms
+        48: 4,  # Tom 1 Head (Hi-Mid Tom)
+        50: 5,  # Tom 1 Rim (High Tom)
+        45: 6,  # Tom 2 Head (Low Tom)
+        47: 7,  # Tom 2 Rim (Low-Mid Tom)
+        43: 8,  # Tom 3 Head (High Floor Tom)
+        58: 9,  # Tom 3 Rim (Vibraslap)
+        41: 10, # Tom 4 Head (Low Floor Tom)
+        39: 11, # Tom 4 Rim (Hand Clap)
+        
+        # Hi-Hats
+        42: 12, # Hi-Hat Closed (Bow)
+        22: 13, # Hi-Hat Closed (Edge) - Roland specific
+        46: 14, # Hi-Hat Open (Bow)
+        26: 15, # Hi-Hat Open (Edge) - Roland specific
+        44: 16, # Hi-Hat Pedal
+        
+        # Cymbals
+        49: 17, # Crash 1 (Bow)
+        55: 18, # Crash 1 (Edge/Splash)
+        57: 19, # Crash 2 (Bow)
+        52: 20, # Crash 2 (Edge/Chinese)
+        51: 21, # Ride (Bow)
+        59: 22, # Ride (Edge)
+        53: 23, # Ride Bell
+        
+        # Additional percussion
+        54: 24, # Tambourine
+        56: 25, # Cowbell
     }
 
 
-def get_gm_drum_mapping() -> Dict[str, int]:
+def get_drum_name_mapping() -> Dict[str, int]:
     """
-    Get General MIDI drum mapping for export.
+    Get Roland TD-17 drum name to MIDI note mapping for export.
     
     Returns:
         Dictionary mapping drum names to MIDI note numbers
     """
     return {
-        'kick': 36,      # Bass Drum 1
-        'snare': 38,     # Acoustic Snare
-        'hihat': 42,     # Closed Hi-Hat
-        'hi_tom': 50,    # High Tom
-        'mid_tom': 47,   # Low-Mid Tom
-        'low_tom': 45,   # Low Tom
-        'crash': 49,     # Crash Cymbal 1
-        'ride': 51,      # Ride Cymbal 1
+        'kick': 36,
+        'snare_head': 38,
+        'snare_xstick': 37,
+        'snare_rim': 40,
+        'tom1_head': 48,
+        'tom1_rim': 50,
+        'tom2_head': 45,
+        'tom2_rim': 47,
+        'tom3_head': 43,
+        'tom3_rim': 58,
+        'tom4_head': 41,
+        'tom4_rim': 39,
+        'hihat_closed': 42,
+        'hihat_closed_edge': 22,
+        'hihat_open': 46,
+        'hihat_open_edge': 26,
+        'hihat_pedal': 44,
+        'crash1_bow': 49,
+        'crash1_edge': 55,
+        'crash2_bow': 57,
+        'crash2_edge': 52,
+        'ride_bow': 51,
+        'ride_edge': 59,
+        'ride_bell': 53,
+        'tambourine': 54,
+        'cowbell': 56,
     }
 
 
 def get_drum_names() -> List[str]:
-    """Get list of drum class names."""
-    return ['kick', 'snare', 'hihat', 'hi_tom', 'mid_tom', 'low_tom', 'crash', 'ride']
+    """Get list of Roland drum class names."""
+    return [
+        'kick', 'snare_head', 'snare_xstick', 'snare_rim',
+        'tom1_head', 'tom1_rim', 'tom2_head', 'tom2_rim',
+        'tom3_head', 'tom3_rim', 'tom4_head', 'tom4_rim',
+        'hihat_closed', 'hihat_closed_edge', 'hihat_open', 'hihat_open_edge',
+        'hihat_pedal', 'crash1_bow', 'crash1_edge', 'crash2_bow', 'crash2_edge',
+        'ride_bow', 'ride_edge', 'ride_bell', 'tambourine', 'cowbell'
+    ]
 
 
 if __name__ == "__main__":
-    # Test MIDI processing
+    # Test MIDI processing with Roland mapping
     from pathlib import Path
     
     test_midi = "data/e-gmd/drummer1/session1/1_funk_120_beat_4-4.mid"
@@ -200,8 +243,9 @@ if __name__ == "__main__":
     if Path(test_midi).exists():
         print(f"Processing MIDI file: {test_midi}")
         
-        # Get drum mapping
-        drum_mapping = get_egmd_drum_mapping()
+        # Get Roland drum mapping
+        drum_mapping = get_drum_mapping()
+        print(f"Roland mapping covers {len(drum_mapping)} MIDI notes")
         
         # Extract onsets
         onsets = extract_drum_onsets(test_midi, drum_mapping)
@@ -218,7 +262,15 @@ if __name__ == "__main__":
         labels = midi_to_frame_labels(test_midi, num_frames, drum_mapping)
         print(f"\nLabel matrix shape: {labels.shape}")
         print(f"Non-zero frames: {np.count_nonzero(labels.sum(axis=1))}")
+        print(f"Number of drum classes: {labels.shape[1]}")
         
     else:
         print(f"Test MIDI file not found: {test_midi}")
         print("Download E-GMD dataset to test this module.")
+        
+        # Show mapping information
+        print("\nRoland TD-17 Drum Mapping:")
+        drum_mapping = get_drum_mapping()
+        drum_names = get_drum_names()
+        for midi_note, class_idx in drum_mapping.items():
+            print(f"  MIDI {midi_note:2d} -> Class {class_idx:2d}: {drum_names[class_idx]}")

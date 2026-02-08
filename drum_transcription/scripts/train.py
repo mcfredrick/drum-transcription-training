@@ -9,6 +9,9 @@ from lightning.pytorch.callbacks import ModelCheckpoint, EarlyStopping, Learning
 from lightning.pytorch.loggers import WandbLogger, TensorBoardLogger
 import torch
 
+# Enable Tensor Core utilization for better performance
+torch.set_float32_matmul_precision('medium')
+
 # Add project root to path
 sys.path.append(str(Path(__file__).parent.parent))
 
@@ -43,11 +46,54 @@ def main():
         help='Run 1 batch for testing'
     )
     
+    # Add hyperparameter override arguments for Optuna
+    parser.add_argument(
+        '--learning-rate',
+        type=float,
+        default=None,
+        help='Learning rate (overrides config)'
+    )
+    parser.add_argument(
+        '--batch-size',
+        type=int,
+        default=None,
+        help='Batch size (overrides config)'
+    )
+    parser.add_argument(
+        '--weight-decay',
+        type=float,
+        default=None,
+        help='Weight decay (overrides config)'
+    )
+    parser.add_argument(
+        '--optimizer',
+        type=str,
+        default=None,
+        help='Optimizer (overrides config)'
+    )
+    
     args = parser.parse_args()
     
     # Load config
     print(f"Loading config from: {args.config}")
     config = load_config(args.config)
+    
+    # Apply command-line overrides
+    if args.learning_rate is not None:
+        config.training.learning_rate = args.learning_rate
+        print(f"Override: learning_rate = {args.learning_rate}")
+    
+    if args.batch_size is not None:
+        config.training.batch_size = args.batch_size
+        print(f"Override: batch_size = {args.batch_size}")
+    
+    if args.weight_decay is not None:
+        config.training.weight_decay = args.weight_decay
+        print(f"Override: weight_decay = {args.weight_decay}")
+    
+    if args.optimizer is not None:
+        config.training.optimizer = args.optimizer
+        print(f"Override: optimizer = {args.optimizer}")
     
     # Set experiment name
     experiment_name = args.experiment_name or config.logging.experiment_name

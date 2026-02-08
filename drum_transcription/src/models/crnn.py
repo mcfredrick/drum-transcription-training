@@ -187,8 +187,16 @@ class DrumTranscriptionCRNN(L.LightningModule):
         # Compute loss (only on valid frames)
         loss = self._compute_masked_loss(predictions, labels_downsampled, adjusted_lengths)
         
-        # Log metrics
+        # Log loss
         self.log('train_loss', loss, on_step=True, on_epoch=True, prog_bar=True)
+        
+        # Compute metrics (only log epoch-level to avoid slowdown)
+        if self.trainer.state.stage == 'train':
+            with torch.no_grad():
+                metrics = self._compute_metrics(predictions, labels_downsampled, adjusted_lengths)
+                for name, value in metrics.items():
+                    # Log to tensorboard but not progress bar to avoid clutter
+                    self.log(f'train_{name}', value, on_step=False, on_epoch=True, prog_bar=False)
         
         return loss
     
@@ -237,7 +245,9 @@ class DrumTranscriptionCRNN(L.LightningModule):
         # Compute per-class metrics
         metrics = self._compute_metrics(predictions, labels_downsampled, adjusted_lengths)
         for name, value in metrics.items():
-            self.log(f'val_{name}', value, on_step=False, on_epoch=True)
+            # Show F1 in progress bar, all metrics in logs
+            prog_bar = (name == 'f1')
+            self.log(f'val_{name}', value, on_step=False, on_epoch=True, prog_bar=prog_bar)
         
         return loss
     
