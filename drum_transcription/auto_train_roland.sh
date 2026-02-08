@@ -23,6 +23,26 @@ echo ""
 echo "=========================================="
 echo ""
 
+# Validation checks
+echo "Validating configuration..."
+
+# Check config uses Roland data
+if ! grep -q "processed_data_roland" configs/full_training_config.yaml; then
+    echo "❌ ERROR: Config doesn't use Roland data!"
+    echo "   Expected: processed_data_roland"
+    exit 1
+fi
+
+# Check config uses 26 classes
+if ! grep -q "n_classes: 26" configs/full_training_config.yaml; then
+    echo "❌ ERROR: Config doesn't use 26 classes!"
+    echo "   Expected: n_classes: 26"
+    exit 1
+fi
+
+echo "✅ Configuration validated"
+echo ""
+
 # Check if data exists
 if [ ! -d "/mnt/hdd/drum-tranxn/processed_data_roland/splits" ]; then
     echo "ERROR: Roland preprocessed data not found!"

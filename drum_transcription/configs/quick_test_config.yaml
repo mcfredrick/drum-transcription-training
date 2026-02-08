@@ -1,11 +1,11 @@
-# Medium test configuration - Roland TD-17 mapping
-# Use this for meaningful validation (100 files, 20 epochs, ~2-3 hours)
+# Quick test configuration - Roland TD-17 mapping
+# Use this for fast validation (10 files, 5 epochs, ~5-10 minutes)
 
 data:
   egmd_root: "/mnt/hdd/drum-tranxn/e-gmd-v1.0.0"
   processed_root: "/mnt/hdd/drum-tranxn/processed_data_roland"
   splits_dir: "/mnt/hdd/drum-tranxn/processed_data_roland/splits"
-  max_files: 100  # 100 files for medium test
+  max_files: 10  # Only 10 files for quick test
   train_split: 0.7
   val_split: 0.15
   test_split: 0.15
@@ -34,59 +34,55 @@ model:
   bidirectional: true
 
 training:
-  num_epochs: 20  # Medium test
+  num_epochs: 5  # Quick test only
   batch_size: 4
   learning_rate: 0.00044547593667580503  # From Optuna
   optimizer: AdamW
   weight_decay: 5.559904341261682e-05
   scheduler: "ReduceLROnPlateau"
-  scheduler_patience: 3
+  scheduler_patience: 2
   scheduler_factor: 0.5
   gradient_clip_val: 1.0
   accumulate_grad_batches: 1
   precision: "16-mixed"
 
 augmentation:
-  enabled: true  # Enable for realistic training
-  time_stretch_prob: 0.3
-  time_stretch_range: [0.95, 1.05]
-  pitch_shift_prob: 0.3
-  pitch_shift_range: [-2, 2]
-  volume_scale_prob: 0.5
-  volume_scale_range: [0.8, 1.2]
-  reverb_prob: 0.2
-  noise_prob: 0.3
-  noise_range: [0.001, 0.01]
+  enabled: false  # Disable for consistent quick tests
+  time_stretch_prob: 0.0
+  pitch_shift_prob: 0.0
+  volume_scale_prob: 0.0
+  reverb_prob: 0.0
+  noise_prob: 0.0
 
 loss:
   type: "BCELoss"
   class_weights: null
 
 early_stopping:
-  enabled: true
+  enabled: false  # Disabled for quick test
   monitor: "val_loss"
-  patience: 10  # More patience for medium test
+  patience: 5
   mode: "min"
   min_delta: 0.001
 
 checkpoint:
   monitor: "val_loss"
-  save_top_k: 3
+  save_top_k: 1
   mode: "min"
   save_last: true
-  dirpath: "/mnt/hdd/drum-tranxn/checkpoints_roland/medium_test"
-  filename: "medium-test-{epoch:02d}-{val_loss:.4f}"
+  dirpath: "/mnt/hdd/drum-tranxn/checkpoints_roland/quick_test"
+  filename: "quick-test-{epoch:02d}-{val_loss:.4f}"
 
 logging:
   logger: "tensorboard"
-  project_name: "drum-transcription-roland-medium-test"
-  experiment_name: "medium-test-100files-20epochs"
-  log_every_n_steps: 10
-  save_dir: "/mnt/hdd/drum-tranxn/logs_roland/medium_test"
+  project_name: "drum-transcription-roland-quick-test"
+  experiment_name: "quick-test-validation"
+  log_every_n_steps: 5
+  save_dir: "/mnt/hdd/drum-tranxn/logs_roland/quick_test"
 
 hardware:
   devices: [0]
-  num_workers: 4
+  num_workers: 2
   accelerator: "gpu"
 
 postprocessing:

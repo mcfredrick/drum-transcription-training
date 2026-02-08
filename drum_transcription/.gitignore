@@ -4,77 +4,53 @@ __pycache__/
 *$py.class
 *.so
 .Python
-build/
-develop-eggs/
-dist/
-downloads/
-eggs/
-.eggs/
-lib/
-lib64/
-parts/
-sdist/
-var/
-wheels/
-*.egg-info/
-.installed.cfg
-*.egg
-
-# Virtual environments
+.venv/
 venv/
-env/
 ENV/
-.venv
+env/
 
-# UV
-.uv/
+# Training outputs
+/logs/
+/logs_roland/
+/checkpoints/
+/checkpoints_roland/
+/optuna_checkpoints/
+*.log
+*.ckpt
+!example.ckpt
 
-# IDEs
+# Data
+*.h5
+*.hdf5
+/processed_data/
+/processed_data_roland/
+/DELETED_legacy_processed_data/
+
+# Databases
+*.db
+*.db-journal
+optuna_study.db
+
+# TensorBoard
+events.out.tfevents.*
+runs/
+
+# IDE
 .vscode/
 .idea/
 *.swp
 *.swo
 *~
 
-# Jupyter Notebook
-.ipynb_checkpoints
-*.ipynb
-
-# Data
-data/e-gmd/
-data/processed/
-*.wav
-*.mid
-*.midi
-*.h5
-*.hdf5
-*.npy
-
-# Model checkpoints
-checkpoints/
-*.ckpt
-*.pth
-*.pt
-
-# Logs
-logs/
-wandb/
-lightning_logs/
-*.log
-
-# TensorBoard
-events.out.tfevents.*
-
 # OS
 .DS_Store
 Thumbs.db
 
-# Testing
-.pytest_cache/
-.coverage
-htmlcov/
-
-# Temporary files
-*.tmp
+# Temporary
 tmp/
 temp/
+*.tmp
+
+# Optuna visualizations
+optuna_history.html
+optuna_importance.html

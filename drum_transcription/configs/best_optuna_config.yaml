@@ -1,5 +1,0 @@
-training:
-  batch_size: 4
-  learning_rate: 0.00044547593667580503
-  optimizer: AdamW
-  weight_decay: 5.559904341261682e-05

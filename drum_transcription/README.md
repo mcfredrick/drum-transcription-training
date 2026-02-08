@@ -1,399 +1,315 @@
-# Drum Transcription for Rhythm Game
+# Drum Transcription - Roland TD-17 Training System
 
-This project trains a deep learning model to transcribe drum tracks into MIDI for use in a rhythm game. The model uses a CRNN (Convolutional Recurrent Neural Network) architecture trained on the E-GMD dataset.
+Deep learning system for transcribing drum audio to MIDI using the Roland TD-17 electronic drum kit mapping (26 classes).
 
-## Features
+## Overview
 
-- **8-class drum transcription**: kick, snare, hi-hat, hi-tom, mid-tom, low-tom, crash, ride
-- **State-of-the-art CRNN architecture** with PyTorch Lightning
-- **Data augmentation**: time stretch, pitch shift, reverb, noise
-- **General MIDI export** for game integration
-- **Multi-GPU training** support
-- **Fast preprocessing** with HDF5 storage
+This project trains a CRNN (Convolutional Recurrent Neural Network) to transcribe drum performances from audio recordings to MIDI files, using detailed Roland TD-17 drum articulations.
+
+**Key Features:**
+- **26-class drum transcription** with Roland TD-17 mapping
+- **Detailed articulation:** Head/rim hits, bow/edge cymbals, hi-hat variations
+- **CRNN architecture** with PyTorch Lightning
+- **Data augmentation** for improved generalization
+- **Optimized hyperparameters** via Optuna
+- **Direct Roland TD-17 compatibility** for practice and playback
 
 ## Quick Start
 
-### 1. Installation
-
+**1. Installation and setup:**
 ```bash
-# Install UV (if not already installed)
-curl -LsSf https://astral.sh/uv/install.sh | sh
-
-# Create project and install dependencies
-cd drum_transcription
-uv sync
-
-# Verify PyTorch CUDA installation
-uv run python -c "import torch; print(f'CUDA available: {torch.cuda.is_available()}')"
+# See SETUP.md for complete installation guide
+./quick_test.sh  # Verify setup (5-10 minutes)
 ```
 
-### 2. Download E-GMD Dataset
-
-Download the E-GMD dataset (~90GB):
-
+**2. Train a model:**
 ```bash
-# Create data directory
-mkdir -p data/e-gmd
-
-# Download from Google Magenta
-wget http://storage.googleapis.com/magentadata/datasets/e-gmd/v1.0.0/e-gmd-v1.0.0.zip
-
-# Unzip
-unzip e-gmd-v1.0.0.zip -d data/e-gmd/
+./auto_train_roland.sh  # Full training (12-24 hours)
 ```
 
-### 3. Preprocess Dataset
-
-Convert audio to spectrograms and MIDI to labels:
-
+**3. Transcribe audio to MIDI:**
 ```bash
-# Create splits and preprocess (uses all CPU cores)
-uv run python scripts/preprocess_egmd.py \
-    --config configs/default_config.yaml \
-    --num-workers 8 \
-    --use-hdf5
-
-# This will:
-# 1. Create train/val/test splits (70/15/15)
-# 2. Extract log-mel spectrograms from audio
-# 3. Convert MIDI annotations to frame-level labels
-# 4. Save as HDF5 files for fast loading
-```
-
-Expected output structure:
-```
-data/
-├── e-gmd/              # Raw dataset
-├── processed/          # Preprocessed spectrograms and labels
-└── splits/             # Train/val/test split files
-    ├── train_split.txt
-    ├── val_split.txt
-    └── test_split.txt
-```
-
-### 4. Train Model
-
-```bash
-# Train with default config
-uv run python scripts/train.py \
-    --config configs/default_config.yaml \
-    --experiment-name crnn-egmd-baseline
-
-# Train with custom experiment name
-uv run python scripts/train.py \
-    --experiment-name my-experiment
-
-# Resume from checkpoint
-uv run python scripts/train.py \
-    --resume checkpoints/last.ckpt
-
-# Fast development run (1 batch for testing)
-uv run python scripts/train.py --fast-dev-run
-```
-
-Training will:
-- Use both GPUs (3070 + 3090) automatically
-- Save checkpoints to `checkpoints/`
-- Log to Weights & Biases (or TensorBoard)
-- Apply early stopping if validation loss doesn't improve
-
-### 5. Transcribe Audio
-
-```bash
-# Transcribe a drum track to MIDI
 uv run python scripts/transcribe.py \
-    path/to/audio.wav \
-    output.mid \
-    --checkpoint checkpoints/best_model.ckpt
-
-# With custom threshold
-uv run python scripts/transcribe.py \
-    audio.wav output.mid \
-    --checkpoint checkpoints/best_model.ckpt \
-    --threshold 0.6 \
-    --min-interval 0.03
+    --checkpoint /mnt/hdd/drum-tranxn/checkpoints_roland/best.ckpt \
+    --audio your_audio.wav \
+    --output output.mid
 ```
 
-The output MIDI file will use General MIDI drum mapping and can be imported directly into your rhythm game.
+## Documentation
 
-## Project Structure
+**Start here:**
+- **[SETUP.md](SETUP.md)** - Installation, dependencies, data preprocessing
+- **[TRAINING.md](TRAINING.md)** - Training models, configurations, monitoring
+- **[INFERENCE.md](INFERENCE.md)** - Using trained models for transcription
+- **[ROLAND_MAPPING.md](ROLAND_MAPPING.md)** - Complete drum mapping reference
+
+**Advanced:**
+- **[docs/HYPERPARAMETER_OPTIMIZATION.md](docs/HYPERPARAMETER_OPTIMIZATION.md)** - Optuna tuning guide
+
+## Roland TD-17 Mapping
+
+This system uses 26 drum classes for detailed transcription:
+
+**Drums:** Kick, Snare (head/rim/x-stick), 4 Toms (head/rim each)
+**Hi-Hat:** Closed/open (bow/edge), pedal
+**Cymbals:** 2 Crashes (bow/edge), Ride (bow/edge/bell)
+**Auxiliary:** Tambourine, Cowbell
+
+See [ROLAND_MAPPING.md](ROLAND_MAPPING.md) for complete details.
+
+## Repository Structure
 
 ```
 drum_transcription/
-├── configs/
-│   └── default_config.yaml      # Training configuration
-├── src/
-│   ├── data/
-│   │   ├── audio_processing.py  # Spectrogram extraction
-│   │   ├── midi_processing.py   # MIDI label conversion
-│   │   ├── augmentation.py      # Data augmentation
-│   │   ├── dataset.py           # PyTorch Dataset
-│   │   └── data_module.py       # Lightning DataModule
-│   ├── models/
-│   │   └── crnn.py              # CRNN model
-│   └── utils/
-│       └── config.py            # Config loading utilities
-├── scripts/
-│   ├── preprocess_egmd.py       # Dataset preprocessing
-│   ├── train.py                 # Training script
-│   └── transcribe.py            # Inference script
-├── pyproject.toml               # Dependencies (UV)
-└── README.md
+├── README.md                   # This file
+├── SETUP.md                    # Installation guide
+├── TRAINING.md                 # Training guide
+├── INFERENCE.md                # Inference guide
+├── ROLAND_MAPPING.md           # Drum mapping reference
+│
+├── configs/                    # Training configurations
+│   ├── roland_config.yaml      # Base Roland configuration
+│   ├── full_training_config.yaml  # Production training (150 epochs)
+│   ├── medium_test_config.yaml    # Medium test (100 files, 20 epochs)
+│   └── quick_test_config.yaml     # Quick test (10 files, 5 epochs)
+│
+├── scripts/                    # Main scripts
+│   ├── train.py                # Training script
+│   ├── preprocess_roland.py    # Data preprocessing
+│   ├── transcribe.py           # Inference script
+│   └── evaluate.py             # Model evaluation
+│
+├── src/                        # Source code
+│   ├── models/crnn.py          # CRNN model architecture
+│   ├── data/                   # Data loading and augmentation
+│   └── utils/                  # Utilities
+│
+├── tests/                      # Test scripts
+│   ├── test_preprocessing.py   # Test preprocessing pipeline
+│   ├── test_single_file.py     # Test single file inference
+│   └── README.md               # Test documentation
+│
+├── docs/                       # Additional documentation
+│   └── HYPERPARAMETER_OPTIMIZATION.md
+│
+├── auto_train_roland.sh        # Full training launcher
+├── quick_test.sh               # Quick validation script
+├── train_with_optuna.py        # Hyperparameter optimization
+└── pyproject.toml              # Dependencies (UV)
 ```
 
-## Configuration
+## System Requirements
 
-Edit `configs/default_config.yaml` to customize:
+**Hardware:**
+- GPU: CUDA-capable with 8GB+ VRAM (RTX 3070 or better)
+- Storage: 50GB+ (dataset + processed data + checkpoints)
+- RAM: 16GB+
 
-**Model architecture:**
-```yaml
-model:
-  n_classes: 8
-  conv_filters: [32, 64, 128]
-  hidden_size: 128
-  num_gru_layers: 3
+**Software:**
+- Linux or WSL2 (Ubuntu 20.04+)
+- Python 3.10+
+- CUDA 11.8+
+- UV package manager
+
+See [SETUP.md](SETUP.md) for detailed requirements and installation.
+
+## Training Configurations
+
+Three training modes available:
+
+| Mode | Files | Epochs | Time | Purpose |
+|------|-------|--------|------|---------|
+| **Quick** | 10 | 5 | 5-10 min | Verify setup |
+| **Medium** | 100 | 20 | 2-3 hours | Test changes |
+| **Full** | 1200+ | 150 | 12-24 hours | Production model |
+
+**Run configurations:**
+```bash
+./quick_test.sh                                      # Quick test
+uv run python scripts/train.py --config configs/medium_test_config.yaml  # Medium
+./auto_train_roland.sh                               # Full training
 ```
-
-**Training hyperparameters:**
-```yaml
-training:
-  batch_size: 16
-  num_epochs: 100
-  learning_rate: 0.001
-```
-
-**Data augmentation:**
-```yaml
-augmentation:
-  enabled: true
-  time_stretch_prob: 0.5
-  pitch_shift_prob: 0.5
-  reverb_prob: 0.3
-  noise_prob: 0.3
-```
-
-## Hardware Requirements
-
-**Minimum:**
-- GPU: NVIDIA GPU with 8GB VRAM (e.g., RTX 3070)
-- RAM: 16GB
-- Storage: 150GB (90GB E-GMD + 50GB processed + checkpoints)
-
-**Recommended (your setup):**
-- GPU: RTX 3090 (24GB) + RTX 3070 (8GB)
-- RAM: 32GB+
-- Storage: 200GB SSD
-
-**Training time:**
-- ~2-3 days for 100 epochs on RTX 3090
-- ~4-5 days on RTX 3070
 
 ## Model Architecture
 
-```
-Input: Log-mel spectrogram (batch, 1, 128, time)
-    ↓
-CNN Encoder (3 blocks):
-    Conv2D(32) → BatchNorm → ReLU → MaxPool → Dropout(0.25)
-    Conv2D(64) → BatchNorm → ReLU → MaxPool → Dropout(0.25)
-    Conv2D(128) → BatchNorm → ReLU → MaxPool → Dropout(0.25)
-    ↓
-Bidirectional GRU (3 layers, hidden=128)
-    ↓
-Dense Layer: Linear(256) → ReLU → Dropout(0.3) → Linear(8) → Sigmoid
-    ↓
-Output: Frame-level predictions (batch, time, 8)
-```
+**CRNN Design:**
+- **Input:** Log-mel spectrograms (128 bins)
+- **CNN:** 4 convolutional blocks (32→64→128→256 filters)
+- **RNN:** 3-layer bidirectional GRU (256 hidden units)
+- **Output:** 26 classes (Roland TD-17 mapping)
+- **Loss:** Binary cross-entropy with sigmoid activation
 
-**Parameters:** ~1-5M (depending on configuration)
+**Optimized hyperparameters** (via Optuna):
+- Learning rate: 0.00044547593667580503
+- Batch size: 4
+- Optimizer: AdamW
+- Weight decay: 5.559904341261682e-05
 
-## Performance Expectations
+See [TRAINING.md](TRAINING.md) for architecture details.
 
-Based on SOTA research with E-GMD:
+## Performance
 
-**Overall F-measure:** 70-80%
+**Expected metrics (full training):**
+- **Overall F1:** 0.70-0.85
+- **Validation loss:** 0.015-0.025
 
-**Per-class F-measure:**
-- Kick: 85-90%
-- Snare: 80-85%
-- Hi-hat: 75-80%
-- Hi-Tom: 70-75%
-- Mid-Tom: 65-75%
-- Low-Tom: 65-75%
-- Crash: 70-75%
-- Ride: 70-75%
+**Per-class F1 scores:**
+- Easy drums (kick, snare): 0.85-0.95
+- Medium (toms, crashes): 0.70-0.85
+- Hard (hi-hat articulations): 0.60-0.75
 
-## Logging & Monitoring
+## Dataset
 
-### Weights & Biases (Recommended)
+**E-GMD (Extended Groove MIDI Dataset):**
+- 1200+ professional drum recordings
+- MIDI annotations with precise timing
+- Multiple drummers and styles
+- ~30GB total size
 
+**Preprocessing:**
 ```bash
-# Login to W&B
-uv run wandb login
-
-# Training will automatically log to W&B
-# View at: https://wandb.ai/your-username/drum-transcription
+uv run python scripts/preprocess_roland.py \
+    --config configs/roland_config.yaml
 ```
 
-Metrics logged:
-- Training/validation loss
-- Per-class precision/recall/F1
-- Learning rate
-- Gradient norms
+Creates:
+- Mel spectrograms (HDF5 format)
+- Roland MIDI labels (26 classes)
+- Train/val/test splits (70/15/15)
 
-### TensorBoard (Alternative)
+## Usage Examples
 
+**Train from scratch:**
 ```bash
-# Change logger in config
-logging:
-  logger: "tensorboard"
-
-# View logs
-uv run tensorboard --logdir logs/
+./auto_train_roland.sh
 ```
 
-## Common Issues
-
-### CUDA Out of Memory
-
-Reduce batch size in config:
-```yaml
-training:
-  batch_size: 8  # Or even 4
-```
-
-### Data Loading Too Slow
-
-Increase workers:
-```yaml
-hardware:
-  num_workers: 8
-```
-
-Or use HDF5 format (faster than .npy):
+**Resume training:**
 ```bash
-uv run python scripts/preprocess_egmd.py --use-hdf5
+uv run python scripts/train.py \
+    --config configs/full_training_config.yaml \
+    --checkpoint /path/to/last.ckpt
 ```
 
-### macOS Installation Issues
-
-If you get build errors on macOS:
-
+**Transcribe audio:**
 ```bash
-# Install dependencies
-brew install libsndfile portaudio
-
-# Install with no build isolation
-uv add librosa --no-build-isolation
+uv run python scripts/transcribe.py \
+    --checkpoint /path/to/best.ckpt \
+    --audio song.wav \
+    --output song.mid
 ```
 
-## Advanced Usage
-
-### Hyperparameter Tuning
-
-Create custom config files:
-
+**Batch processing:**
 ```bash
-# Copy default config
-cp configs/default_config.yaml configs/experiment1.yaml
-
-# Edit experiment1.yaml
-# Then train:
-uv run python scripts/train.py --config configs/experiment1.yaml
-```
-
-### Multi-GPU Training
-
-Specify GPUs in config:
-```yaml
-hardware:
-  devices: [0, 1]  # Use GPU 0 and 1
-```
-
-Or via environment variable:
-```bash
-CUDA_VISIBLE_DEVICES=0,1 uv run python scripts/train.py
-```
-
-### Batch Inference
-
-Transcribe multiple files:
-
-```bash
-# Create a simple batch script
-for audio in songs/*.wav; do
-    output="${audio%.wav}.mid"
+for audio in *.wav; do
     uv run python scripts/transcribe.py \
-        "$audio" "$output" \
-        --checkpoint checkpoints/best_model.ckpt
+        --checkpoint checkpoint.ckpt \
+        --audio "$audio" \
+        --output "${audio%.wav}.mid"
 done
 ```
 
-## Integration with Your Game
+## Monitoring Training
 
-The transcribed MIDI files use General MIDI drum mapping:
-
-```python
-DRUM_MAPPING = {
-    36: "kick",      # Bass Drum 1 (C1)
-    38: "snare",     # Acoustic Snare (D1)
-    42: "hihat",     # Closed Hi-Hat (F#1)
-    50: "hi_tom",    # High Tom (D2)
-    47: "mid_tom",   # Low-Mid Tom (B1)
-    45: "low_tom",   # Low Tom (A1)
-    49: "crash",     # Crash Cymbal 1 (C#2)
-    51: "ride",      # Ride Cymbal 1 (D#2)
-}
+**TensorBoard:**
+```bash
+tensorboard --logdir=/mnt/hdd/drum-tranxn/logs_roland
+# Open: http://localhost:6006
 ```
 
-All notes are on MIDI channel 10 (drums).
+**Key metrics:**
+- `train_loss` / `val_loss` - Training progress
+- `val_f1` - Validation F1-score (target: >0.7)
+- Per-class F1 scores - Individual drum performance
 
-To load in your game:
-1. Parse MIDI file
-2. Extract note onsets and pitches
-3. Map pitches to your 8-lane system
-4. Display in game
+See [TRAINING.md](TRAINING.md) for monitoring details.
+
+## Common Issues
+
+**Setup issues:** See [SETUP.md](SETUP.md#troubleshooting)
+**Training issues:** See [TRAINING.md](TRAINING.md#troubleshooting)
+**Inference issues:** See [INFERENCE.md](INFERENCE.md#troubleshooting)
+
+**Quick fixes:**
+- CUDA OOM → Reduce batch size in config
+- Slow training → Increase num_workers
+- Wrong drum sounds → Verify Roland checkpoint
+
+## Integration with Roland TD-17
+
+**Export MIDI for TD-17:**
+```bash
+# 1. Transcribe audio
+uv run python scripts/transcribe.py \
+    --checkpoint best.ckpt \
+    --audio song.wav \
+    --output song.mid
+
+# 2. Copy to SD card: /ROLAND/TD-17/SONG/
+# 3. Load on TD-17 and play along!
+```
+
+See [INFERENCE.md](INFERENCE.md#using-with-roland-td-17) for details.
+
+## Development
+
+**Test scripts:**
+```bash
+# Test preprocessing
+uv run python tests/test_preprocessing.py
+
+# Test inference
+uv run python tests/test_single_file.py /path/to/audio.wav
+```
+
+**Hyperparameter tuning:**
+```bash
+uv run python train_with_optuna.py \
+    --config configs/roland_config.yaml \
+    --n-trials 50
+```
+
+See [docs/HYPERPARAMETER_OPTIMIZATION.md](docs/HYPERPARAMETER_OPTIMIZATION.md) for Optuna guide.
 
 ## Citation
 
-If you use this code or model, please cite:
-
 **E-GMD Dataset:**
 ```
-Callender, C., Hawthorne, C., & Engel, J. (2020). 
-Improving perceptual quality of drum transcription with the Expanded Groove MIDI Dataset.
+Callender, C., Hawthorne, C., & Engel, J. (2020).
+Improving perceptual quality of drum transcription with
+the Expanded Groove MIDI Dataset.
 ```
 
 **PyTorch Lightning:**
 ```
-Falcon, W., et al. (2019). 
-PyTorch Lightning. GitHub. 
+Falcon, W., et al. (2019).
+PyTorch Lightning. GitHub.
 https://github.com/Lightning-AI/pytorch-lightning
 ```
 
 ## License
 
-This project is for educational/research purposes. 
+Educational/research purposes.
 
-Dependencies:
-- E-GMD: CC BY 4.0
+**Dependencies:**
+- E-GMD Dataset: CC BY 4.0
 - PyTorch: BSD License
 - PyTorch Lightning: Apache 2.0
-
-## Contributing
-
-This is a personal project for your rhythm game, but suggestions are welcome!
-
-## Support
-
-For issues:
-1. Check `configs/default_config.yaml` for correct paths
-2. Verify E-GMD dataset is downloaded and extracted
-3. Run preprocessing with `--num-workers 1` to see detailed errors
-4. Test with `--fast-dev-run` to verify setup
 
 ## Acknowledgments
 
 - Google Magenta team for E-GMD dataset
-- PyTorch Lightning team for excellent framework
-- Research community for CRNN architectures
+- PyTorch Lightning team for training framework
+- Roland Corporation for TD-17 drum kit design
+
+## Support
+
+**For help:**
+1. Check relevant documentation (SETUP.md, TRAINING.md, INFERENCE.md)
+2. Review logs in `/mnt/hdd/drum-tranxn/logs_roland/`
+3. Verify configurations use Roland mapping (26 classes)
+4. Run quick_test.sh to validate setup
+
+---
+
+**Ready to start?** → Begin with [SETUP.md](SETUP.md)

@@ -23,7 +23,7 @@ class DrumTranscriptionCRNN(L.LightningModule):
     def __init__(
         self,
         n_mels: int = 128,
-        n_classes: int = 8,
+        n_classes: int = 26,
         conv_filters: list = [32, 64, 128],
         conv_kernel_size: int = 3,
         pool_size: int = 2,
@@ -43,7 +43,7 @@ class DrumTranscriptionCRNN(L.LightningModule):
         
         Args:
             n_mels: Number of mel frequency bins
-            n_classes: Number of drum classes (8 for our task)
+            n_classes: Number of drum classes (26 for Roland TD-17)
             conv_filters: List of CNN filter counts per block
             conv_kernel_size: Kernel size for convolutions
             pool_size: Pooling size
@@ -390,7 +390,7 @@ if __name__ == "__main__":
     # Create model
     model = DrumTranscriptionCRNN(
         n_mels=128,
-        n_classes=8,
+        n_classes=26,
         conv_filters=[32, 64, 128],
         hidden_size=128,
         num_gru_layers=3

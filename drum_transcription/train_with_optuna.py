@@ -1,5 +1,16 @@
 #!/usr/bin/env python3
-"""Training script with Optuna hyperparameter optimization."""
+"""
+Hyperparameter optimization for Roland TD-17 (26-class) drum transcription.
+
+When to use this:
+- Model architecture changes significantly
+- Dataset changes (different preprocessing)
+- Training shows instability or poor convergence
+- Starting a new project variant
+
+For routine training, use the existing optimized parameters in
+full_training_config.yaml (already tuned via Optuna).
+"""
 
 import argparse
 from pathlib import Path
