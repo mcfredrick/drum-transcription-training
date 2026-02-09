@@ -6,13 +6,14 @@ from pathlib import Path
 from typing import Optional
 import json
 
-from src.data.dataset import EGMDDataset, collate_fn
+from src.data.dataset import EGMDDataset, collate_fn, hierarchical_collate_fn
 from src.data.augmentation import DrumAugmentation, NoAugmentation
+from src.data.hierarchical_labels import convert_to_hierarchical
 
 
 class EGMDDataModule(L.LightningDataModule):
     """DataModule for E-GMD drum transcription dataset."""
-    
+
     def __init__(
         self,
         processed_root: str,
@@ -20,11 +21,12 @@ class EGMDDataModule(L.LightningDataModule):
         batch_size: int = 16,
         num_workers: int = 4,
         use_hdf5: bool = True,
-        augmentation_config: Optional[dict] = None
+        augmentation_config: Optional[dict] = None,
+        use_hierarchical_labels: bool = False
     ):
         """
         Initialize DataModule.
-        
+
         Args:
             processed_root: Root directory of preprocessed data
             splits_dir: Directory containing split files
@@ -32,6 +34,7 @@ class EGMDDataModule(L.LightningDataModule):
             num_workers: Number of workers for data loading
             use_hdf5: Whether to use HDF5 format
             augmentation_config: Configuration for data augmentation
+            use_hierarchical_labels: Whether to convert labels to hierarchical format
         """
         super().__init__()
         self.processed_root = processed_root
@@ -39,6 +42,7 @@ class EGMDDataModule(L.LightningDataModule):
         self.batch_size = batch_size
         self.num_workers = num_workers
         self.use_hdf5 = use_hdf5
+        self.use_hierarchical_labels = use_hierarchical_labels
         
         # Set up augmentation
         if augmentation_config is not None and augmentation_config.get('enabled', False):
@@ -115,39 +119,49 @@ class EGMDDataModule(L.LightningDataModule):
     
     def train_dataloader(self):
         """Return training dataloader."""
+        collate_func = self._get_collate_fn()
         return DataLoader(
             self.train_dataset,
             batch_size=self.batch_size,
             shuffle=True,
             num_workers=self.num_workers,
-            collate_fn=collate_fn,
+            collate_fn=collate_func,
             pin_memory=True,
             persistent_workers=True if self.num_workers > 0 else False
         )
-    
+
     def val_dataloader(self):
         """Return validation dataloader."""
+        collate_func = self._get_collate_fn()
         return DataLoader(
             self.val_dataset,
             batch_size=self.batch_size,
             shuffle=False,
             num_workers=self.num_workers,
-            collate_fn=collate_fn,
+            collate_fn=collate_func,
             pin_memory=True,
             persistent_workers=True if self.num_workers > 0 else False
         )
-    
+
     def test_dataloader(self):
         """Return test dataloader."""
+        collate_func = self._get_collate_fn()
         return DataLoader(
             self.test_dataset,
             batch_size=self.batch_size,
             shuffle=False,
             num_workers=self.num_workers,
-            collate_fn=collate_fn,
+            collate_fn=collate_func,
             pin_memory=True,
             persistent_workers=True if self.num_workers > 0 else False
         )
+
+    def _get_collate_fn(self):
+        """Get appropriate collate function based on label format."""
+        if self.use_hierarchical_labels:
+            return hierarchical_collate_fn
+        else:
+            return collate_fn
 
 
 if __name__ == "__main__":

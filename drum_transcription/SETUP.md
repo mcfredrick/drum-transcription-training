@@ -1,15 +1,15 @@
-# Setup Guide - Roland TD-17 Drum Transcription
+# Setup Guide - Standard Drum Kit Transcription
 
 Complete guide for installing and configuring the drum transcription training system.
 
 ## System Requirements
 
 ### Hardware
-- **GPU**: CUDA-capable GPU with 8GB+ VRAM (RTX 3070 or better recommended)
+- **GPU**: CUDA-capable GPU with 6GB+ VRAM (RTX 3060 or better recommended)
 - **Storage**: 50GB+ free space
   - E-GMD dataset: ~30GB
-  - Preprocessed data: ~3GB
-  - Checkpoints/logs: ~10GB+
+  - Preprocessed data: ~2.5GB (11-class system)
+  - Checkpoints/logs: ~8GB+
 - **RAM**: 16GB+ recommended
 - **CPU**: Multi-core processor (4+ cores)
 
@@ -90,30 +90,31 @@ ls e-gmd-v1.0.0/
 ln -s /path/to/existing/e-gmd-v1.0.0 /mnt/hdd/drum-tranxn/e-gmd-v1.0.0
 ```
 
-### 5. Preprocess Data (Roland Mapping)
+### 5. Preprocess Data (11-Class Mapping)
 
-Convert raw audio and MIDI to preprocessed spectrograms and labels using Roland TD-17 mapping (26 classes).
+Convert raw audio and MIDI to preprocessed spectrograms and labels using standard drum kit mapping (11 classes).
 
 ```bash
 cd ~/Documents/drum-tranxn/drum_transcription
 
 # Run preprocessing (takes 30-60 minutes for full dataset)
-uv run python scripts/preprocess_roland.py \
-    --config configs/roland_config.yaml
+uv run python scripts/preprocess.py \
+    --config configs/drum_config.yaml
 
 # This creates:
-# - /mnt/hdd/drum-tranxn/processed_data_roland/
+# - /mnt/hdd/drum-tranxn/processed_data/
 # - Mel spectrograms (HDF5 format)
-# - Roland MIDI labels (26 classes)
+# - Standard drum kit labels (11 classes)
 # - Train/val/test splits
 ```
 
 **Expected output:**
 ```
-Processing E-GMD dataset with Roland TD-17 mapping...
+Processing E-GMD dataset with 11-class drum mapping...
 Found 1200+ audio files
 Processing: 100%|████████| 1200/1200 [45:23<00:00, 0.44it/s]
-Saved splits to: /mnt/hdd/drum-tranxn/processed_data_roland/splits/
+Coverage: 96.58% of dataset
+Saved splits to: /mnt/hdd/drum-tranxn/processed_data/splits/
 ```
 
 ### 6. Verify Setup
@@ -138,12 +139,13 @@ cd ~/Documents/drum-tranxn/drum_transcription
 
 ## Configuration
 
-### Roland TD-17 Mapping
+### Standard Drum Kit Mapping
 
-This system uses the Roland TD-17 electronic drum kit mapping:
-- **26 drum classes** (detailed articulation)
-- Includes head/rim hits, bow/edge cymbals, hi-hat articulations
-- See [ROLAND_MAPPING.md](ROLAND_MAPPING.md) for complete mapping
+This system uses a standard drum kit mapping:
+- **11 drum classes** (essential drum sounds)
+- Includes kick, snare variations, hi-hat types, toms, ride
+- Covers **96.58%** of E-GMD dataset
+- See [DRUM_MAPPING.md](DRUM_MAPPING.md) for complete mapping
 
 ### File Locations
 
@@ -151,9 +153,9 @@ This system uses the Roland TD-17 electronic drum kit mapping:
 ```
 /mnt/hdd/drum-tranxn/
 ├── e-gmd-v1.0.0/              # Raw E-GMD dataset
-├── processed_data_roland/      # Preprocessed (26 classes)
-├── checkpoints_roland/         # Model checkpoints
-└── logs_roland/                # Training logs
+├── processed_data/             # Preprocessed (11 classes)
+├── checkpoints/                # Model checkpoints
+└── logs/                       # Training logs
 ```
 
 **Code structure:**
@@ -194,7 +196,7 @@ training:
 **Cause:** Preprocessing didn't complete or failed.
 **Solution:** Re-run preprocessing:
 ```bash
-uv run python scripts/preprocess_roland.py --config configs/roland_config.yaml
+uv run python scripts/preprocess.py --config configs/drum_config.yaml
 ```
 
 ### "Module not found"
@@ -209,20 +211,20 @@ uv pip install <missing-package>
 **Normal:** Full dataset takes 30-60 minutes.
 **Speed up:** Use `--max-files 100` for testing:
 ```bash
-uv run python scripts/preprocess_roland.py \
-    --config configs/roland_config.yaml \
+uv run python scripts/preprocess.py \
+    --config configs/drum_config.yaml \
     --max-files 100
 ```
 
 ### "Legacy data" errors
-**Cause:** Old 8-class data references.
-**Solution:** Ensure configs point to `processed_data_roland` not `processed_data`.
+**Cause:** Old data from previous mapping systems.
+**Solution:** Ensure configs point to `processed_data` with 11-class mapping.
 
 ## Next Steps
 
 1. ✅ **Setup complete** - All dependencies installed, data preprocessed
 2. 📖 **Read TRAINING.md** - Learn how to train models
-3. 🚀 **Start training** - Run `./auto_train_roland.sh`
+3. 🚀 **Start training** - Run `./auto_train.sh`
 4. 📊 **Monitor progress** - Use TensorBoard
 5. 🎵 **Use trained model** - See INFERENCE.md
 
@@ -230,12 +232,12 @@ uv run python scripts/preprocess_roland.py \
 
 - **[TRAINING.md](TRAINING.md)** - How to train models
 - **[INFERENCE.md](INFERENCE.md)** - Using trained models
-- **[ROLAND_MAPPING.md](ROLAND_MAPPING.md)** - Drum mapping reference
+- **[DRUM_MAPPING.md](DRUM_MAPPING.md)** - Drum mapping reference
 - **[docs/HYPERPARAMETER_OPTIMIZATION.md](docs/HYPERPARAMETER_OPTIMIZATION.md)** - Tuning guide
 
 ## Support
 
 If you encounter issues not covered here:
-1. Check logs in `/mnt/hdd/drum-tranxn/logs_roland/`
+1. Check logs in `/mnt/hdd/drum-tranxn/logs/`
 2. Verify data paths in config files
-3. Ensure Roland data (26 classes) is being used, not legacy (8 classes)
+3. Ensure 11-class mapping is being used consistently

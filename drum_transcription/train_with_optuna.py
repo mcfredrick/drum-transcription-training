@@ -1,16 +1,5 @@
 #!/usr/bin/env python3
-"""
-Hyperparameter optimization for Roland TD-17 (26-class) drum transcription.
-
-When to use this:
-- Model architecture changes significantly
-- Dataset changes (different preprocessing)
-- Training shows instability or poor convergence
-- Starting a new project variant
-
-For routine training, use the existing optimized parameters in
-full_training_config.yaml (already tuned via Optuna).
-"""
+"""Training script with Optuna hyperparameter optimization."""
 
 import argparse
 from pathlib import Path
@@ -37,12 +26,12 @@ def objective(trial: optuna.Trial) -> float:
     
     # Suggest hyperparameters (aligned with your target configs)
     lr = trial.suggest_float('lr', 1e-4, 2e-3, log=True)  # 0.0001 to 0.002 (covers 0.0008 and 0.001)
-    batch_size = trial.suggest_categorical('batch_size', [4, 6, 8])  # Smaller batch sizes for memory
+    batch_size = trial.suggest_categorical('batch_size', [2, 3, 4])  # Very small batch sizes for 7.65GB VRAM
     weight_decay = trial.suggest_float('weight_decay', 5e-5, 2e-4, log=True)  # 0.00005 to 0.0002 (covers 0.0001)
     optimizer = trial.suggest_categorical('optimizer', ['AdamW'])  # Focus on AdamW (your target)
     
     # Load base config
-    config = load_config('configs/roland_config.yaml')
+    config = load_config('configs/drum_config.yaml')
     
     # Override with trial parameters
     config.training.learning_rate = lr
@@ -50,8 +39,8 @@ def objective(trial: optuna.Trial) -> float:
     config.training.weight_decay = weight_decay
     config.training.optimizer = optimizer
     
-    # Update model config for 26 classes
-    config.model.n_classes = 26
+    # Ensure model config uses 11 classes
+    config.model.n_classes = 11
     
     print(f"\nTrial {trial.number}: lr={lr}, batch_size={batch_size}, weight_decay={weight_decay}, optimizer={optimizer}")
     
@@ -105,7 +94,6 @@ def objective(trial: optuna.Trial) -> float:
     
     # Setup logger (check environment variable for W&B)
     use_wandb = os.getenv('USE_WANDB', 'false').lower() == 'true'
-    logger = None
     
     if use_wandb:
         try:
@@ -124,7 +112,7 @@ def objective(trial: optuna.Trial) -> float:
             print(f"W&B not available, using TensorBoard for trial {trial.number}")
             use_wandb = False
     
-    if not use_wandb or logger is None:
+    if not use_wandb:
         # Use TensorBoard logger
         logger = TensorBoardLogger(
             save_dir=f'/mnt/hdd/drum-tranxn/logs_optuna/trial_{trial.number}',
@@ -168,7 +156,7 @@ def main():
     parser.add_argument(
         '--study-name',
         type=str,
-        default='drum-transcription-optuna-v2',
+        default='drum-transcription-optuna',
         help='Optuna study name'
     )
     parser.add_argument(
@@ -176,11 +164,6 @@ def main():
         type=str,
         default='sqlite:///optuna_study.db',
         help='Optuna storage URL'
-    )
-    parser.add_argument(
-        '--auto-train',
-        action='store_true',
-        help='Automatically start training with best parameters after optimization'
     )
     
     args = parser.parse_args()
@@ -245,28 +228,6 @@ def main():
         print("Visualization plots saved to optuna_history.html and optuna_importance.html")
     except ImportError:
         print("Install optuna[visualization] for plots: pip install optuna[visualization]")
-    
-    # Auto-train with best parameters if requested
-    if args.auto_train:
-        print("\n" + "="*80)
-        print("Starting automatic training with best parameters...")
-        print("="*80)
-        
-        # Create training command with best parameters
-        train_cmd = [
-            'uv', 'run', 'python', 'train.py',
-            '--config', 'configs/roland_config.yaml',
-            '--learning-rate', str(study.best_trial.params['lr']),
-            '--batch-size', str(study.best_trial.params['batch_size']),
-            '--weight-decay', str(study.best_trial.params['weight_decay']),
-            '--optimizer', study.best_trial.params['optimizer']
-        ]
-        
-        print(f"Command: {' '.join(train_cmd)}")
-        
-        # Start training
-        import subprocess
-        subprocess.run(train_cmd, check=True)
 
 
 if __name__ == "__main__":

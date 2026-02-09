@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-Preprocess E-GMD dataset with Roland TD-17 mapping.
-This script creates a new processed dataset using the 26-class Roland mapping.
+Preprocess E-GMD dataset for standard drum kit transcription.
+This script creates a new processed dataset using the 11-class standard drum kit mapping.
 """
 
 import argparse
@@ -32,8 +32,8 @@ def process_file(
     force: bool = False
 ):
     """
-    Process a single audio/MIDI file pair using Roland TD-17 mapping.
-    
+    Process a single audio/MIDI file pair using standard drum kit mapping.
+
     Args:
         file_path: Path to audio file (relative to egmd_root)
         egmd_root: Root directory of E-GMD dataset
@@ -76,9 +76,9 @@ def process_file(
             fmax=config.audio.fmax
         )
         
-        # Extract labels from MIDI using Roland mapping
+        # Extract labels from MIDI using standard drum kit mapping
         num_frames = spec.shape[1]
-        drum_mapping = config.roland_midi.midi_to_class.to_dict()  # Use Roland mapping from config
+        drum_mapping = config.drum_midi.midi_to_class.to_dict()  # Use standard drum kit mapping from config
         labels = midi_to_frame_labels(
             str(midi_path),
             num_frames=num_frames,
@@ -176,13 +176,13 @@ def create_dataset_splits(
 
 
 def main():
-    """Main function to preprocess with Roland mapping."""
-    parser = argparse.ArgumentParser(description='Preprocess E-GMD dataset with Roland TD-17 mapping')
+    """Main function to preprocess with standard drum kit mapping."""
+    parser = argparse.ArgumentParser(description='Preprocess E-GMD dataset with standard drum kit mapping')
     parser.add_argument(
         '--config',
         type=str,
-        default='configs/roland_config.yaml',
-        help='Path to Roland config file'
+        default='configs/drum_config.yaml',
+        help='Path to config file'
     )
     parser.add_argument(
         '--num-workers',
@@ -210,7 +210,7 @@ def main():
     args = parser.parse_args()
     
     print("="*80)
-    print("E-GMD Dataset Preprocessing - Roland TD-17 Mapping (26 classes)")
+    print("E-GMD Dataset Preprocessing - Standard Drum Kit (11 classes)")
     print("="*80)
     print(f"Config: {args.config}")
     print(f"Workers: {args.num_workers}")
@@ -280,7 +280,7 @@ def main():
     failed = len(results) - successful
     
     print("\n" + "="*80)
-    print("Roland preprocessing completed!")
+    print("Preprocessing completed!")
     print("="*80)
     print(f"Successful: {successful}")
     print(f"Failed: {failed}")
@@ -288,8 +288,8 @@ def main():
     print(f"Number of classes: {config.model.n_classes}")
     print("Next steps:")
     print("1. Verify the processed dataset has the correct number of classes")
-    print("2. Run: uv run python train_with_optuna.py")
-    print("3. Monitor training with wandb")
+    print("2. Run: uv run python scripts/train.py --config configs/drum_config.yaml")
+    print("3. Monitor training with wandb or tensorboard")
 
 
 if __name__ == "__main__":

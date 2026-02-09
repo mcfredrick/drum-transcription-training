@@ -7,6 +7,8 @@ from pathlib import Path
 from typing import Optional, Callable, Tuple
 import h5py
 
+from src.data.hierarchical_labels import convert_to_hierarchical
+
 
 class EGMDDataset(Dataset):
     """
@@ -197,8 +199,30 @@ def collate_fn(batch):
     specs_batch = torch.stack(specs_padded)
     labels_batch = torch.stack(labels_padded)
     lengths_batch = torch.LongTensor(lengths)
-    
+
     return specs_batch, labels_batch, lengths_batch
+
+
+def hierarchical_collate_fn(batch):
+    """
+    Custom collate function that converts labels to hierarchical format.
+
+    Args:
+        batch: List of (spec, labels) tuples
+
+    Returns:
+        Batched (specs, hierarchical_labels, lengths) tensors
+        - specs: (batch, 1, n_mels, time)
+        - hierarchical_labels: Dict of tensors for each branch
+        - lengths: (batch,) - original sequence lengths
+    """
+    # First use standard collate to pad sequences
+    specs_batch, labels_batch, lengths_batch = collate_fn(batch)
+
+    # Convert labels from (batch, time, 12) to hierarchical format
+    hierarchical_labels = convert_to_hierarchical(labels_batch)
+
+    return specs_batch, hierarchical_labels, lengths_batch
 
 
 if __name__ == "__main__":

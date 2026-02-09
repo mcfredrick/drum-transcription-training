@@ -1,0 +1,146 @@
+# Training Configuration for Drum Transcription Model - Standard Drum Kit (12-Class with Crash)
+
+# Dataset paths (on HDD for large data)
+data:
+  egmd_root: "/mnt/hdd/drum-tranxn/e-gmd-v1.0.0"  # Raw E-GMD dataset
+  processed_root: "/mnt/hdd/drum-tranxn/processed_data"  # Preprocessed spectrograms and labels (12-class system)
+  splits_dir: "/mnt/hdd/drum-tranxn/processed_data/splits"  # Train/val/test split files
+  train_split: 0.7
+  val_split: 0.15
+  test_split: 0.15
+  random_seed: 42
+
+# Audio preprocessing
+audio:
+  sample_rate: 22050
+  n_fft: 2048
+  hop_length: 512  # ~23ms frames (43 FPS)
+  n_mels: 128
+  fmin: 30  # Hz - captures kick fundamentals
+  fmax: 11025  # Nyquist frequency
+  
+# Model architecture
+model:
+  name: "DrumTranscriptionCRNN"
+  n_mels: 128
+  n_classes: 12  # 12 standard drum kit classes (0-11, including crash)
+  conv_filters: [32, 64, 128]  # Reduced for GPU memory constraints
+  conv_kernel_size: 3
+  pool_size: 2
+  dropout_cnn: 0.25  # Reduced dropout for smaller model
+  hidden_size: 64  # Reduced from 128 for GPU memory constraints
+  num_gru_layers: 2  # Reduced from 3
+  dropout_gru: 0.3  # Reduced dropout
+  bidirectional: true
+
+# Training hyperparameters
+training:
+  batch_size: 4  # Reduced for GPU memory constraints
+  num_epochs: 100  # Reduced from 150 - simpler task converges faster
+  learning_rate: 0.001  # Standard learning rate
+  weight_decay: 0.0001
+  optimizer: "AdamW"  # AdamW for better generalization
+  scheduler: "ReduceLROnPlateau"
+  scheduler_patience: 10  # Reduced patience - faster convergence expected
+  scheduler_factor: 0.5
+  gradient_clip_val: 1.0
+  precision: "16-mixed"  # Use mixed precision training
+  accumulate_grad_batches: 1  # No accumulation needed with larger batches
+  
+# Data augmentation
+augmentation:
+  enabled: true
+  time_stretch_prob: 0.5
+  time_stretch_range: [0.9, 1.1]
+  pitch_shift_prob: 0.5
+  pitch_shift_range: [-2, 2]  # semitones
+  volume_scale_prob: 0.5
+  volume_scale_range: [-6, 6]  # dB
+  reverb_prob: 0.3
+  reverb_delay_range: [1, 3]  # frames
+  reverb_attenuation_range: [0.2, 0.4]
+  noise_prob: 0.3
+  noise_level_range: [0.01, 0.05]
+
+# Loss function
+loss:
+  type: "BCELoss"  # Multi-label binary crossentropy
+  focal_alpha: 0.25  # Only used if FocalLoss
+  focal_gamma: 2.0   # Only used if FocalLoss
+  class_weights: [0.5, 0.5, 1.5, 3.5, 0.8, 0.9, 15.0, 1.5, 1.6, 1.0, 13.0, 8.0]  # Weights for 12 classes (inverse frequency, crash added)
+
+# Early stopping
+early_stopping:
+  enabled: true
+  monitor: "val_loss"
+  patience: 20  # Reduced from 25 - faster convergence expected
+  mode: "min"
+  min_delta: 0.001
+
+# Checkpointing (saved to HDD)
+checkpoint:
+  monitor: "val_loss"
+  save_top_k: 3
+  mode: "min"
+  save_last: true
+  dirpath: "/mnt/hdd/drum-tranxn/checkpoints"
+  filename: "drum-12class-{epoch:02d}-{val_loss:.4f}"
+
+# Logging (saved to HDD)
+logging:
+  logger: "tensorboard"  # wandb or tensorboard
+  project_name: "drum-transcription-12class"
+  experiment_name: "crnn-12class-standard-kit"
+  log_every_n_steps: 10
+  save_dir: "/mnt/hdd/drum-tranxn/logs"
+
+# Hardware
+hardware:
+  devices: [0]  # GPU IDs to use (single GPU available)
+  num_workers: 4  # Data loader workers per GPU
+  accelerator: "gpu"
+  
+# Post-processing (for inference)
+postprocessing:
+  onset_threshold: 0.5  # Probability threshold for onset detection
+  min_onset_interval: 0.05  # Minimum time between onsets (seconds)
+  peak_min_distance: 2  # Minimum distance between peaks (frames)
+
+# Standard drum kit mapping (12 classes including crash)
+drum_midi:
+  drum_names: [
+    "kick", "snare_head", "snare_rim", "side_stick",
+    "hihat_pedal", "hihat_closed", "hihat_open",
+    "floor_tom", "high_mid_tom",
+    "ride", "ride_bell", "crash"
+  ]
+  midi_to_class:
+    36: 0   # Kick
+    38: 1   # Snare head
+    40: 2   # Snare rim
+    37: 3   # Side stick
+    44: 4   # Pedal hi-hat
+    42: 5   # Closed hi-hat
+    46: 6   # Open hi-hat
+    43: 7   # Floor tom
+    48: 8   # High-mid tom
+    51: 9   # Ride
+    53: 10  # Ride bell
+    49: 11  # Crash cymbal
+
+  class_to_midi:
+    0: 36   # Kick
+    1: 38   # Snare head
+    2: 40   # Snare rim
+    3: 37   # Side stick
+    4: 44   # Pedal hi-hat
+    5: 42   # Closed hi-hat
+    6: 46   # Open hi-hat
+    7: 43   # Floor tom
+    8: 48   # High-mid tom
+    9: 51   # Ride
+    10: 53  # Ride bell
+    11: 49  # Crash cymbal
+
+  default_velocity: 80
+  note_duration_ticks: 50  # MIDI ticks for note off

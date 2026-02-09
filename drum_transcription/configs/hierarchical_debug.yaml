@@ -1,0 +1,107 @@
+# Debug Configuration for Hierarchical Model
+# For quick testing with subset of data (10-20%)
+
+# Dataset paths
+data:
+  egmd_root: "/mnt/hdd/drum-tranxn/e-gmd-v1.0.0"
+  processed_root: "/mnt/hdd/drum-tranxn/processed_data_hierarchical"  # 12-class with crash
+  splits_dir: "/mnt/hdd/drum-tranxn/processed_data_hierarchical/splits"
+  train_split: 0.7
+  val_split: 0.15
+  test_split: 0.15
+  random_seed: 42
+  use_hdf5: true
+
+# Audio preprocessing
+audio:
+  sample_rate: 22050
+  n_fft: 2048
+  hop_length: 512
+  n_mels: 128
+  fmin: 30
+  fmax: 11025
+
+# Model architecture (same as full training)
+model:
+  name: "HierarchicalDrumCRNN"
+  n_mels: 128
+  conv_filters: [32, 64, 128, 256]
+  conv_kernel_size: 3
+  pool_size: 2
+  dropout_cnn: 0.25
+  hidden_size: 256
+  num_lstm_layers: 2
+  dropout_lstm: 0.3
+
+  branch_weights:
+    kick: 1.5
+    snare: 1.5
+    tom_primary: 1.0
+    tom_variation: 0.7
+    cymbal_primary: 1.2
+    hihat_variation: 0.5
+    ride_variation: 0.5
+    crash: 0.6
+
+# Training hyperparameters (REDUCED FOR DEBUG)
+training:
+  batch_size: 2  # Very small for debugging (GPU memory constrained)
+  num_epochs: 10  # Just 10 epochs for debug
+  learning_rate: 0.001
+  weight_decay: 0.0001
+  optimizer: "AdamW"
+  scheduler: "ReduceLROnPlateau"
+  scheduler_patience: 3  # Reduced
+  scheduler_factor: 0.5
+  gradient_clip_val: 1.0
+  precision: "16-mixed"
+  accumulate_grad_batches: 1
+
+# Data augmentation (DISABLED FOR DEBUG)
+augmentation:
+  enabled: false  # Disable for faster iteration
+
+# Early stopping (DISABLED FOR DEBUG)
+early_stopping:
+  enabled: false  # Let it run full 10 epochs
+
+# Checkpointing
+checkpoint:
+  monitor: "val_kick_roc_auc"
+  save_top_k: 2  # Only save top 2
+  mode: "max"
+  save_last: true
+  dirpath: "/mnt/hdd/drum-tranxn/checkpoints/hierarchical_debug"
+  filename: "debug-{epoch:02d}-{val_kick_roc_auc:.3f}"
+
+# Logging
+logging:
+  logger: "tensorboard"
+  project_name: "drum-transcription-hierarchical-debug"
+  experiment_name: "debug-10pct-subset"
+  log_every_n_steps: 5  # More frequent logging
+  save_dir: "/mnt/hdd/drum-tranxn/logs/hierarchical_debug"
+
+# Hardware
+hardware:
+  devices: [0]
+  num_workers: 4
+  accelerator: "gpu"
+
+# Postprocessing
+postprocessing:
+  kick_threshold: 0.5
+  snare_threshold: 0.5
+  tom_threshold: 0.5
+  cymbal_threshold: 0.5
+  crash_threshold: 0.6
+  min_onset_interval: 0.05
+  peak_min_distance: 2
+
+# Success criteria
+targets:
+  kick_roc_auc_target: 0.85
+  snare_roc_auc_target: 0.85
+  tom_roc_auc_target: 0.80
+  cymbal_roc_auc_target: 0.82
+  crash_roc_auc_target: 0.75

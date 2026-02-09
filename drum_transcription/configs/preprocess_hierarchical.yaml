@@ -1,0 +1,70 @@
+# Preprocessing Configuration for Hierarchical Model (12-class with crash)
+# This config is used for preprocessing E-GMD dataset with crash cymbal support
+
+# Dataset paths
+data:
+  egmd_root: "/mnt/hdd/drum-tranxn/e-gmd-v1.0.0"  # Raw E-GMD dataset
+  processed_root: "/mnt/hdd/drum-tranxn/processed_data_hierarchical"  # NEW output directory
+  splits_dir: "/mnt/hdd/drum-tranxn/processed_data_hierarchical/splits"
+  train_split: 0.7
+  val_split: 0.15
+  test_split: 0.15
+  random_seed: 42
+
+# Audio preprocessing
+audio:
+  sample_rate: 22050
+  n_fft: 2048
+  hop_length: 512  # ~23ms frames (43 FPS)
+  n_mels: 128
+  fmin: 30  # Hz - captures kick fundamentals (20-100 Hz range)
+  fmax: 11025  # Nyquist - captures all cymbals up to 8 kHz
+
+# Model configuration (needed for preprocessing)
+model:
+  n_classes: 12  # 12 classes INCLUDING crash cymbal
+
+# MIDI mapping (12-class system with crash)
+drum_midi:
+  drum_names: [
+    "kick", "snare_head", "snare_rim", "side_stick",
+    "hihat_pedal", "hihat_closed", "hihat_open",
+    "floor_tom", "high_mid_tom",
+    "ride", "ride_bell", "crash"
+  ]
+
+  # MIDI note to class index mapping
+  midi_to_class:
+    36: 0   # Kick
+    38: 1   # Snare head
+    40: 2   # Snare rim
+    37: 3   # Side stick
+    44: 4   # Pedal hi-hat (will be dropped in hierarchical model, but kept in preprocessing)
+    42: 5   # Closed hi-hat
+    46: 6   # Open hi-hat
+    43: 7   # Floor tom
+    48: 8   # High-mid tom
+    51: 9   # Ride
+    53: 10  # Ride bell
+    49: 11  # Crash 1 Bow (Roland TD-17)
+    55: 11  # Crash 1 Edge (Roland TD-17) - FOUND IN E-GMD!
+    57: 11  # Crash 2 Bow (Roland TD-17)
+    52: 11  # Crash 2 Edge (Roland TD-17) - FOUND IN E-GMD!
+
+  # Class index to MIDI note mapping (for output)
+  class_to_midi:
+    0: 36   # Kick
+    1: 38   # Snare head
+    2: 40   # Snare rim
+    3: 37   # Side stick
+    4: 44   # Pedal hi-hat
+    5: 42   # Closed hi-hat
+    6: 46   # Open hi-hat
+    7: 43   # Floor tom
+    8: 48   # High-mid tom
+    9: 51   # Ride
+    10: 53  # Ride bell
+    11: 49  # Crash (default output: Crash 1 Bow)
+
+  default_velocity: 80
+  note_duration_ticks: 50

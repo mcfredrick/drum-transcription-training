@@ -1,0 +1,1 @@
+Can we use some frequency-based post-processing to classify the toms into floor (low), high-mid (mid), and high (high)? Maybe first we should do a per-class performance analysis to see where the current implementation is struggling and where it's performing well.

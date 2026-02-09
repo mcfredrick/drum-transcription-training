@@ -1,18 +1,18 @@
-# Drum Transcription - Roland TD-17 Training System
+# Drum Transcription - Standard Drum Kit (11-Class)
 
-Deep learning system for transcribing drum audio to MIDI using the Roland TD-17 electronic drum kit mapping (26 classes).
+Deep learning system for transcribing drum audio to MIDI using a standard drum kit mapping (11 classes).
 
 ## Overview
 
-This project trains a CRNN (Convolutional Recurrent Neural Network) to transcribe drum performances from audio recordings to MIDI files, using detailed Roland TD-17 drum articulations.
+This project trains a CRNN (Convolutional Recurrent Neural Network) to transcribe drum performances from audio recordings to MIDI files, using a standard drum kit mapping.
 
 **Key Features:**
-- **26-class drum transcription** with Roland TD-17 mapping
-- **Detailed articulation:** Head/rim hits, bow/edge cymbals, hi-hat variations
+- **11-class drum transcription** with standard drum kit mapping
+- **Essential drum sounds:** Kick, snare, hi-hat, toms, ride, auxiliary percussion
 - **CRNN architecture** with PyTorch Lightning
 - **Data augmentation** for improved generalization
 - **Optimized hyperparameters** via Optuna
-- **Direct Roland TD-17 compatibility** for practice and playback
+- **Efficient training** with lower VRAM requirements
 
 ## Quick Start
 
@@ -24,13 +24,13 @@ This project trains a CRNN (Convolutional Recurrent Neural Network) to transcrib
 
 **2. Train a model:**
 ```bash
-./auto_train_roland.sh  # Full training (12-24 hours)
+./auto_train.sh  # Full training (12-24 hours)
 ```
 
 **3. Transcribe audio to MIDI:**
 ```bash
 uv run python scripts/transcribe.py \
-    --checkpoint /mnt/hdd/drum-tranxn/checkpoints_roland/best.ckpt \
+    --checkpoint /mnt/hdd/drum-tranxn/checkpoints/best.ckpt \
     --audio your_audio.wav \
     --output output.mid
 ```
@@ -41,21 +41,28 @@ uv run python scripts/transcribe.py \
 - **[SETUP.md](SETUP.md)** - Installation, dependencies, data preprocessing
 - **[TRAINING.md](TRAINING.md)** - Training models, configurations, monitoring
 - **[INFERENCE.md](INFERENCE.md)** - Using trained models for transcription
-- **[ROLAND_MAPPING.md](ROLAND_MAPPING.md)** - Complete drum mapping reference
+- **[DRUM_MAPPING.md](DRUM_MAPPING.md)** - Complete drum mapping reference
 
 **Advanced:**
 - **[docs/HYPERPARAMETER_OPTIMIZATION.md](docs/HYPERPARAMETER_OPTIMIZATION.md)** - Optuna tuning guide
 
-## Roland TD-17 Mapping
+## Standard Drum Kit Mapping (11 Classes)
 
-This system uses 26 drum classes for detailed transcription:
+This system uses 11 essential drum classes:
 
-**Drums:** Kick, Snare (head/rim/x-stick), 4 Toms (head/rim each)
-**Hi-Hat:** Closed/open (bow/edge), pedal
-**Cymbals:** 2 Crashes (bow/edge), Ride (bow/edge/bell)
-**Auxiliary:** Tambourine, Cowbell
+1. **Kick** (MIDI 36)
+2. **Snare head** (MIDI 38)
+3. **Snare rim** (MIDI 40)
+4. **Side stick** (MIDI 37)
+5. **Pedal hi-hat** (MIDI 44)
+6. **Closed hi-hat** (MIDI 42)
+7. **Open hi-hat** (MIDI 46)
+8. **Floor tom** (MIDI 43)
+9. **High-mid tom** (MIDI 48)
+10. **Ride** (MIDI 51)
+11. **Ride bell** (MIDI 53)
 
-See [ROLAND_MAPPING.md](ROLAND_MAPPING.md) for complete details.
+Covers **96.58%** of E-GMD dataset. See [DRUM_MAPPING.md](DRUM_MAPPING.md) for complete details.
 
 ## Repository Structure
 
@@ -65,17 +72,17 @@ drum_transcription/
 ├── SETUP.md                    # Installation guide
 ├── TRAINING.md                 # Training guide
 ├── INFERENCE.md                # Inference guide
-├── ROLAND_MAPPING.md           # Drum mapping reference
+├── DRUM_MAPPING.md             # Drum mapping reference
 │
 ├── configs/                    # Training configurations
-│   ├── roland_config.yaml      # Base Roland configuration
+│   ├── drum_config.yaml        # Base configuration (11 classes)
 │   ├── full_training_config.yaml  # Production training (150 epochs)
 │   ├── medium_test_config.yaml    # Medium test (100 files, 20 epochs)
 │   └── quick_test_config.yaml     # Quick test (10 files, 5 epochs)
 │
 ├── scripts/                    # Main scripts
 │   ├── train.py                # Training script
-│   ├── preprocess_roland.py    # Data preprocessing
+│   ├── preprocess.py           # Data preprocessing
 │   ├── transcribe.py           # Inference script
 │   └── evaluate.py             # Model evaluation
 │
@@ -92,7 +99,7 @@ drum_transcription/
 ├── docs/                       # Additional documentation
 │   └── HYPERPARAMETER_OPTIMIZATION.md
 │
-├── auto_train_roland.sh        # Full training launcher
+├── auto_train.sh               # Full training launcher
 ├── quick_test.sh               # Quick validation script
 ├── train_with_optuna.py        # Hyperparameter optimization
 └── pyproject.toml              # Dependencies (UV)
@@ -101,7 +108,7 @@ drum_transcription/
 ## System Requirements
 
 **Hardware:**
-- GPU: CUDA-capable with 8GB+ VRAM (RTX 3070 or better)
+- GPU: CUDA-capable with 6GB+ VRAM (RTX 3060 or better)
 - Storage: 50GB+ (dataset + processed data + checkpoints)
 - RAM: 16GB+
 
@@ -127,7 +134,7 @@ Three training modes available:
 ```bash
 ./quick_test.sh                                      # Quick test
 uv run python scripts/train.py --config configs/medium_test_config.yaml  # Medium
-./auto_train_roland.sh                               # Full training
+./auto_train.sh                                      # Full training
 ```
 
 ## Model Architecture
@@ -136,8 +143,8 @@ uv run python scripts/train.py --config configs/medium_test_config.yaml  # Mediu
 - **Input:** Log-mel spectrograms (128 bins)
 - **CNN:** 4 convolutional blocks (32→64→128→256 filters)
 - **RNN:** 3-layer bidirectional GRU (256 hidden units)
-- **Output:** 26 classes (Roland TD-17 mapping)
-- **Loss:** Binary cross-entropy with sigmoid activation
+- **Output:** 11 classes (standard drum kit mapping)
+- **Loss:** Weighted binary cross-entropy with sigmoid activation
 
 **Optimized hyperparameters** (via Optuna):
 - Learning rate: 0.00044547593667580503
@@ -145,18 +152,21 @@ uv run python scripts/train.py --config configs/medium_test_config.yaml  # Mediu
 - Optimizer: AdamW
 - Weight decay: 5.559904341261682e-05
 
+**Class weights** for imbalanced data:
+[0.5, 0.5, 1.5, 3.5, 0.8, 0.9, 15.0, 1.5, 1.6, 1.0, 13.0]
+
 See [TRAINING.md](TRAINING.md) for architecture details.
 
 ## Performance
 
 **Expected metrics (full training):**
-- **Overall F1:** 0.70-0.85
-- **Validation loss:** 0.015-0.025
+- **Overall F1:** 0.75-0.90
+- **Validation loss:** 0.010-0.020
 
 **Per-class F1 scores:**
-- Easy drums (kick, snare): 0.85-0.95
-- Medium (toms, crashes): 0.70-0.85
-- Hard (hi-hat articulations): 0.60-0.75
+- Common drums (kick, snare, closed hi-hat): 0.85-0.95
+- Medium frequency (toms, ride, pedal hi-hat): 0.75-0.85
+- Rare drums (open hi-hat, ride bell, side stick): 0.60-0.75
 
 ## Dataset
 
@@ -168,20 +178,20 @@ See [TRAINING.md](TRAINING.md) for architecture details.
 
 **Preprocessing:**
 ```bash
-uv run python scripts/preprocess_roland.py \
-    --config configs/roland_config.yaml
+uv run python scripts/preprocess.py \
+    --config configs/drum_config.yaml
 ```
 
 Creates:
 - Mel spectrograms (HDF5 format)
-- Roland MIDI labels (26 classes)
+- Standard drum kit labels (11 classes)
 - Train/val/test splits (70/15/15)
 
 ## Usage Examples
 
 **Train from scratch:**
 ```bash
-./auto_train_roland.sh
+./auto_train.sh
 ```
 
 **Resume training:**
@@ -213,7 +223,7 @@ done
 
 **TensorBoard:**
 ```bash
-tensorboard --logdir=/mnt/hdd/drum-tranxn/logs_roland
+tensorboard --logdir=/mnt/hdd/drum-tranxn/logs
 # Open: http://localhost:6006
 ```
 
@@ -233,23 +243,7 @@ See [TRAINING.md](TRAINING.md) for monitoring details.
 **Quick fixes:**
 - CUDA OOM → Reduce batch size in config
 - Slow training → Increase num_workers
-- Wrong drum sounds → Verify Roland checkpoint
-
-## Integration with Roland TD-17
-
-**Export MIDI for TD-17:**
-```bash
-# 1. Transcribe audio
-uv run python scripts/transcribe.py \
-    --checkpoint best.ckpt \
-    --audio song.wav \
-    --output song.mid
-
-# 2. Copy to SD card: /ROLAND/TD-17/SONG/
-# 3. Load on TD-17 and play along!
-```
-
-See [INFERENCE.md](INFERENCE.md#using-with-roland-td-17) for details.
+- Poor performance on rare drums → Adjust class weights
 
 ## Development
 
@@ -265,7 +259,7 @@ uv run python tests/test_single_file.py /path/to/audio.wav
 **Hyperparameter tuning:**
 ```bash
 uv run python train_with_optuna.py \
-    --config configs/roland_config.yaml \
+    --config configs/drum_config.yaml \
     --n-trials 50
 ```
 
@@ -300,14 +294,13 @@ Educational/research purposes.
 
 - Google Magenta team for E-GMD dataset
 - PyTorch Lightning team for training framework
-- Roland Corporation for TD-17 drum kit design
 
 ## Support
 
 **For help:**
 1. Check relevant documentation (SETUP.md, TRAINING.md, INFERENCE.md)
-2. Review logs in `/mnt/hdd/drum-tranxn/logs_roland/`
-3. Verify configurations use Roland mapping (26 classes)
+2. Review logs in `/mnt/hdd/drum-tranxn/logs/`
+3. Verify configurations use 11-class mapping
 4. Run quick_test.sh to validate setup
 
 ---

@@ -4,28 +4,28 @@
 set -e
 
 echo "=========================================="
-echo "Quick Test - Roland TD-17 Drum Transcription"
+echo "Quick Test - Standard Drum Kit (11-Class)"
 echo "=========================================="
 echo ""
 echo "Configuration:"
 echo "  Files: 10"
 echo "  Epochs: 5"
-echo "  Classes: 26 (Roland mapping)"
+echo "  Classes: 11 (standard drum kit)"
 echo "  Time: ~5-10 minutes"
 echo ""
 echo "=========================================="
 echo ""
 
-# Verify Roland data exists
-if [ ! -d "/mnt/hdd/drum-tranxn/processed_data_roland/splits" ]; then
-    echo "ERROR: Roland preprocessed data not found!"
+# Verify preprocessed data exists
+if [ ! -d "/mnt/hdd/drum-tranxn/processed_data/splits" ]; then
+    echo "ERROR: Preprocessed data not found!"
     echo "Please run preprocessing first:"
-    echo "  uv run python scripts/preprocess_roland.py --config configs/roland_config.yaml"
+    echo "  uv run python scripts/preprocess.py --config configs/drum_config.yaml"
     exit 1
 fi
 
 # Create checkpoint directory
-mkdir -p /mnt/hdd/drum-tranxn/checkpoints_roland/quick_test
+mkdir -p /mnt/hdd/drum-tranxn/checkpoints/quick_test
 
 # Run training
 echo "Starting quick test..."
@@ -40,7 +40,7 @@ echo "Quick test complete!"
 echo "=========================================="
 echo ""
 echo "✅ If test completed successfully, your setup is working!"
-echo "✅ Proceed with full training: ./auto_train_roland.sh"
+echo "✅ Proceed with full training: ./auto_train.sh"
 echo ""
 echo "📊 View results:"
-echo "  tensorboard --logdir=/mnt/hdd/drum-tranxn/logs_roland/quick_test"
+echo "  tensorboard --logdir=/mnt/hdd/drum-tranxn/logs/quick_test"

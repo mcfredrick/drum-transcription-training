@@ -3,7 +3,9 @@
 import torch
 import torch.nn as nn
 import lightning as L
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, List
+from sklearn.metrics import roc_auc_score, average_precision_score
+import numpy as np
 
 
 class DrumTranscriptionCRNN(L.LightningModule):
@@ -23,7 +25,7 @@ class DrumTranscriptionCRNN(L.LightningModule):
     def __init__(
         self,
         n_mels: int = 128,
-        n_classes: int = 26,
+        n_classes: int = 11,
         conv_filters: list = [32, 64, 128],
         conv_kernel_size: int = 3,
         pool_size: int = 2,
@@ -40,10 +42,10 @@ class DrumTranscriptionCRNN(L.LightningModule):
     ):
         """
         Initialize CRNN model.
-        
+
         Args:
             n_mels: Number of mel frequency bins
-            n_classes: Number of drum classes (26 for Roland TD-17)
+            n_classes: Number of drum classes (11 for standard drum kit)
             conv_filters: List of CNN filter counts per block
             conv_kernel_size: Kernel size for convolutions
             pool_size: Pooling size
@@ -108,6 +110,10 @@ class DrumTranscriptionCRNN(L.LightningModule):
         else:
             pos_weight = None
         self.criterion = nn.BCEWithLogitsLoss(pos_weight=pos_weight)
+
+        # Storage for epoch-level metrics (AUC computation)
+        self.validation_step_outputs = []
+        self.test_step_outputs = []
     
     def _build_cnn_encoder(
         self, 
@@ -228,52 +234,138 @@ class DrumTranscriptionCRNN(L.LightningModule):
     def validation_step(self, batch, batch_idx):
         """Validation step."""
         specs, labels, lengths = batch
-        
+
         # Forward pass
         predictions = self(specs)
-        
+
         # Adjust lengths and labels for pooling
         adjusted_lengths = self._adjust_lengths_for_pooling(lengths)
         labels_downsampled = self._downsample_labels(labels, predictions.size(1))
-        
+
         # Compute loss
         loss = self._compute_masked_loss(predictions, labels_downsampled, adjusted_lengths)
-        
+
         # Log metrics
         self.log('val_loss', loss, on_step=False, on_epoch=True, prog_bar=True)
-        
+
         # Compute per-class metrics
         metrics = self._compute_metrics(predictions, labels_downsampled, adjusted_lengths)
         for name, value in metrics.items():
             # Show F1 in progress bar, all metrics in logs
             prog_bar = (name == 'f1')
             self.log(f'val_{name}', value, on_step=False, on_epoch=True, prog_bar=prog_bar)
-        
+
+        # Store predictions and labels for AUC computation
+        # Apply sigmoid to convert logits to probabilities
+        predictions_prob = torch.sigmoid(predictions)
+        self.validation_step_outputs.append({
+            'predictions': predictions_prob.detach().cpu(),
+            'labels': labels_downsampled.detach().cpu(),
+            'lengths': adjusted_lengths.detach().cpu()
+        })
+
         return loss
-    
+
+    def on_validation_epoch_end(self):
+        """Compute AUC metrics at end of validation epoch."""
+        if not self.validation_step_outputs:
+            return
+
+        # Collect all predictions and labels
+        all_preds = []
+        all_labels = []
+
+        for output in self.validation_step_outputs:
+            predictions = output['predictions']
+            labels = output['labels']
+            lengths = output['lengths']
+
+            # Extract valid frames
+            for i in range(predictions.size(0)):
+                length = lengths[i]
+                all_preds.append(predictions[i, :length].numpy())
+                all_labels.append(labels[i, :length].numpy())
+
+        # Concatenate all frames
+        all_preds = np.concatenate(all_preds, axis=0)  # (total_frames, n_classes)
+        all_labels = np.concatenate(all_labels, axis=0)  # (total_frames, n_classes)
+
+        # Compute AUC metrics
+        auc_metrics = self._compute_auc_metrics(all_preds, all_labels)
+
+        # Log AUC metrics
+        for name, value in auc_metrics.items():
+            prog_bar = (name == 'roc_auc_macro')  # Show macro ROC AUC in progress bar
+            self.log(f'val_{name}', value, prog_bar=prog_bar)
+
+        # Clear outputs
+        self.validation_step_outputs.clear()
+
     def test_step(self, batch, batch_idx):
         """Test step."""
         specs, labels, lengths = batch
-        
+
         # Forward pass
         predictions = self(specs)
-        
+
         # Adjust lengths and labels for pooling
         adjusted_lengths = self._adjust_lengths_for_pooling(lengths)
         labels_downsampled = self._downsample_labels(labels, predictions.size(1))
-        
+
         # Compute loss
         loss = self._compute_masked_loss(predictions, labels_downsampled, adjusted_lengths)
-        
+
         # Log metrics
         self.log('test_loss', loss)
-        
+
         # Compute per-class metrics
         metrics = self._compute_metrics(predictions, labels_downsampled, adjusted_lengths)
         for name, value in metrics.items():
             self.log(f'test_{name}', value)
-        
+
+        # Store predictions and labels for AUC computation
+        predictions_prob = torch.sigmoid(predictions)
+        self.test_step_outputs.append({
+            'predictions': predictions_prob.detach().cpu(),
+            'labels': labels_downsampled.detach().cpu(),
+            'lengths': adjusted_lengths.detach().cpu()
+        })
+
         return loss
+
+    def on_test_epoch_end(self):
+        """Compute AUC metrics at end of test epoch."""
+        if not self.test_step_outputs:
+            return
+
+        # Collect all predictions and labels
+        all_preds = []
+        all_labels = []
+
+        for output in self.test_step_outputs:
+            predictions = output['predictions']
+            labels = output['labels']
+            lengths = output['lengths']
+
+            # Extract valid frames
+            for i in range(predictions.size(0)):
+                length = lengths[i]
+                all_preds.append(predictions[i, :length].numpy())
+                all_labels.append(labels[i, :length].numpy())
+
+        # Concatenate all frames
+        all_preds = np.concatenate(all_preds, axis=0)
+        all_labels = np.concatenate(all_labels, axis=0)
+
+        # Compute AUC metrics
+        auc_metrics = self._compute_auc_metrics(all_preds, all_labels)
+
+        # Log AUC metrics
+        for name, value in auc_metrics.items():
+            self.log(f'test_{name}', value)
+
+        # Clear outputs
+        self.test_step_outputs.clear()
     
     def _compute_masked_loss(
         self, 
@@ -357,6 +449,58 @@ class DrumTranscriptionCRNN(L.LightningModule):
             'f1': f1
         }
     
+    def _compute_auc_metrics(
+        self,
+        predictions: np.ndarray,
+        labels: np.ndarray
+    ) -> Dict[str, float]:
+        """
+        Compute AUC metrics (ROC AUC and PR AUC).
+
+        Args:
+            predictions: (total_frames, n_classes) - probabilities
+            labels: (total_frames, n_classes) - binary labels
+
+        Returns:
+            Dictionary of AUC metrics
+        """
+        metrics = {}
+
+        # Per-class AUC
+        roc_aucs = []
+        pr_aucs = []
+
+        for class_idx in range(self.n_classes):
+            y_true = labels[:, class_idx]
+            y_pred = predictions[:, class_idx]
+
+            # Skip if no positive samples for this class
+            if y_true.sum() == 0 or y_true.sum() == len(y_true):
+                continue
+
+            try:
+                # ROC AUC
+                roc_auc = roc_auc_score(y_true, y_pred)
+                roc_aucs.append(roc_auc)
+                metrics[f'roc_auc_class_{class_idx}'] = roc_auc
+
+                # PR AUC (Average Precision)
+                pr_auc = average_precision_score(y_true, y_pred)
+                pr_aucs.append(pr_auc)
+                metrics[f'pr_auc_class_{class_idx}'] = pr_auc
+
+            except ValueError:
+                # Handle edge cases
+                continue
+
+        # Macro-averaged AUC
+        if roc_aucs:
+            metrics['roc_auc_macro'] = np.mean(roc_aucs)
+        if pr_aucs:
+            metrics['pr_auc_macro'] = np.mean(pr_aucs)
+
+        return metrics
+
     def configure_optimizers(self):
         """Configure optimizer and scheduler."""
         optimizer = torch.optim.Adam(

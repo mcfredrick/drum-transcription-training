@@ -3,11 +3,15 @@
 import argparse
 from pathlib import Path
 import sys
+import os
 
 import lightning as L
 from lightning.pytorch.callbacks import ModelCheckpoint, EarlyStopping, LearningRateMonitor
 from lightning.pytorch.loggers import WandbLogger, TensorBoardLogger
 import torch
+
+# Enable memory optimization for CUDA
+os.environ['PYTORCH_CUDA_ALLOC_CONF'] = 'expandable_segments:True'
 
 # Enable Tensor Core utilization for better performance
 torch.set_float32_matmul_precision('medium')

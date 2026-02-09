@@ -1,6 +1,6 @@
 # Hyperparameter Optimization Guide
 
-This guide explains how to use Optuna for hyperparameter optimization with the Roland TD-17 mapping dataset.
+This guide explains how to use Optuna for hyperparameter optimization with the 11-class standard drum kit mapping dataset.
 
 ## Overview
 
@@ -13,9 +13,9 @@ The project uses Optuna for intelligent hyperparameter search, allowing you to a
   uv add optuna optuna-integration
   ```
 
-- Preprocessed dataset with Roland TD-26 mapping:
+- Preprocessed dataset with 11-class mapping:
   ```bash
-  uv run python scripts/preprocess_roland.py --use-hdf5 --num-workers 4
+  uv run python scripts/preprocess.py --use-hdf5 --num-workers 4
   ```
 
 ## Quick Start
@@ -67,8 +67,8 @@ python train_with_optuna.py [OPTIONS]
 
 Options:
   --n-trials N        Number of optimization trials (default: 20)
-  --study-name NAME    Study name for organization (default: drum-transcription-optuna)
-  --storage URL        Storage URL for persistence (default: sqlite:///optuna_study.db)
+  --study-name NAME    Study name for organization (default: drum-transcription-11class-optuna)
+  --storage URL        Storage URL for persistence (default: sqlite:///optuna_11class_study.db)
 ```
 
 ### Examples
@@ -81,7 +81,7 @@ python train_with_optuna.py --n-trials 5
 python train_with_optuna.py --n-trials 50
 
 # Custom study name
-python train_with_optuna.py --study-name "roland-experiment-1"
+python train_with_optuna.py --study-name "11class-experiment-1"
 
 # Use different storage
 python train_with_optuna.py --storage "postgresql://user:pass@localhost/optuna"
@@ -105,7 +105,7 @@ ps aux | grep train_with_optuna.py
 # Check best results
 uv run python -c "
 import optuna
-study = optuna.load_study('drum-transcription-optuna', 'sqlite:///optuna_study.db')
+study = optuna.load_study('drum-transcription-11class-optuna', 'sqlite:///optuna_11class_study.db')
 print(f'Trials completed: {len(study.trials)}')
 print(f'Best trial: {study.best_trial.number}')
 print(f'Best val_loss: {study.best_trial.value:.4f}')
@@ -117,7 +117,7 @@ for k, v in study.best_trial.params.items():
 # See all trial results
 uv run python -c "
 import optuna
-study = optuna.load_study('drum-transcription-optuna', 'sqlite:///optuna_study.db')
+study = optuna.load_study('drum-transcription-11class-optuna', 'sqlite:///optuna_11class_study.db')
 for i, trial in enumerate(study.trials):
     print(f'Trial {trial.number}: val_loss={trial.value:.4f}, params={trial.params}')
 "
@@ -188,7 +188,7 @@ export USE_WANDB=false
 **Issue**: Study not found
 **Solution**: Use same storage path:
 ```bash
-python train_with_optuna.py --storage "sqlite:///optuna_study.db"
+python train_with_optuna.py --storage "sqlite:///optuna_11class_study.db"
 ```
 
 ### Debug Mode

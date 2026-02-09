@@ -1,16 +1,15 @@
-# Quick test configuration - Roland TD-17 mapping
+# Quick test configuration - Standard Drum Kit (11-Class)
 # Use this for fast validation (10 files, 5 epochs, ~5-10 minutes)
 
 data:
   egmd_root: "/mnt/hdd/drum-tranxn/e-gmd-v1.0.0"
-  processed_root: "/mnt/hdd/drum-tranxn/processed_data_roland"
-  splits_dir: "/mnt/hdd/drum-tranxn/processed_data_roland/splits"
+  processed_root: "/mnt/hdd/drum-tranxn/processed_data"
+  splits_dir: "/mnt/hdd/drum-tranxn/processed_data/splits"
   max_files: 10  # Only 10 files for quick test
   train_split: 0.7
   val_split: 0.15
   test_split: 0.15
   random_seed: 42
-  midi_mapping: "roland"
 
 audio:
   sample_rate: 22050
@@ -21,16 +20,16 @@ audio:
   fmax: 11025
 
 model:
-  name: "DrumTranscriptionCRNN_Roland"
+  name: "DrumTranscriptionCRNN"
   n_mels: 128
-  n_classes: 26  # Roland TD-17
-  conv_filters: [32, 64, 128, 256]
+  n_classes: 11  # Standard drum kit (11 classes)
+  conv_filters: [64, 128, 256]
   conv_kernel_size: 3
   pool_size: 2
   dropout_cnn: 0.3
-  hidden_size: 256
+  hidden_size: 128
   num_gru_layers: 3
-  dropout_gru: 0.4
+  dropout_gru: 0.3
   bidirectional: true
 
 training:
@@ -56,7 +55,7 @@ augmentation:
 
 loss:
   type: "BCELoss"
-  class_weights: null
+  class_weights: [0.5, 0.5, 1.5, 3.5, 0.8, 0.9, 15.0, 1.5, 1.6, 1.0, 13.0]
 
 early_stopping:
   enabled: false  # Disabled for quick test
@@ -70,15 +69,15 @@ checkpoint:
   save_top_k: 1
   mode: "min"
   save_last: true
-  dirpath: "/mnt/hdd/drum-tranxn/checkpoints_roland/quick_test"
+  dirpath: "/mnt/hdd/drum-tranxn/checkpoints/quick_test"
   filename: "quick-test-{epoch:02d}-{val_loss:.4f}"
 
 logging:
   logger: "tensorboard"
-  project_name: "drum-transcription-roland-quick-test"
+  project_name: "drum-transcription-11class-quick-test"
   experiment_name: "quick-test-validation"
   log_every_n_steps: 5
-  save_dir: "/mnt/hdd/drum-tranxn/logs_roland/quick_test"
+  save_dir: "/mnt/hdd/drum-tranxn/logs/quick_test"
 
 hardware:
   devices: [0]
@@ -90,71 +89,39 @@ postprocessing:
   min_onset_interval: 0.05
   peak_min_distance: 2
 
-# Roland TD-17 drum mapping
-roland_midi:
+# Standard drum kit mapping (11 classes)
+drum_midi:
   drum_names: [
-    "kick", "snare_head", "snare_xstick", "snare_rim",
-    "tom1_head", "tom1_rim", "tom2_head", "tom2_rim",
-    "tom3_head", "tom3_rim", "tom4_head", "tom4_rim",
-    "hihat_closed", "hihat_closed_edge", "hihat_open", "hihat_open_edge",
-    "hihat_pedal", "crash1_bow", "crash1_edge", "crash2_bow", "crash2_edge",
-    "ride_bow", "ride_edge", "ride_bell", "tambourine", "cowbell"
+    "kick", "snare_head", "snare_rim", "side_stick",
+    "hihat_pedal", "hihat_closed", "hihat_open",
+    "floor_tom", "high_mid_tom",
+    "ride", "ride_bell"
   ]
   midi_to_class:
     36: 0   # Kick
-    38: 1   # Snare Head
-    37: 2   # Snare X-Stick
-    40: 3   # Snare Rim
-    48: 4   # Tom 1 Head
-    50: 5   # Tom 1 Rim
-    45: 6   # Tom 2 Head
-    47: 7   # Tom 2 Rim
-    43: 8   # Tom 3 Head
-    58: 9   # Tom 3 Rim
-    41: 10  # Tom 4 Head
-    39: 11  # Tom 4 Rim
-    42: 12  # Hi-Hat Closed (Bow)
-    22: 13  # Hi-Hat Closed (Edge)
-    46: 14  # Hi-Hat Open (Bow)
-    26: 15  # Hi-Hat Open (Edge)
-    44: 16  # Hi-Hat Pedal
-    49: 17  # Crash 1 (Bow)
-    55: 18  # Crash 1 (Edge)
-    57: 19  # Crash 2 (Bow)
-    52: 20  # Crash 2 (Edge)
-    51: 21  # Ride (Bow)
-    59: 22  # Ride (Edge)
-    53: 23  # Ride Bell
-    54: 24  # Tambourine
-    56: 25  # Cowbell
+    38: 1   # Snare head
+    40: 2   # Snare rim
+    37: 3   # Side stick
+    44: 4   # Pedal hi-hat
+    42: 5   # Closed hi-hat
+    46: 6   # Open hi-hat
+    43: 7   # Floor tom
+    48: 8   # High-mid tom
+    51: 9   # Ride
+    53: 10  # Ride bell
 
   class_to_midi:
     0: 36   # Kick
-    1: 38   # Snare Head
-    2: 37   # Snare X-Stick
-    3: 40   # Snare Rim
-    4: 48   # Tom 1 Head
-    5: 50   # Tom 1 Rim
-    6: 45   # Tom 2 Head
-    7: 47   # Tom 2 Rim
-    8: 43   # Tom 3 Head
-    9: 58   # Tom 3 Rim
-    10: 41  # Tom 4 Head
-    11: 39  # Tom 4 Rim
-    12: 42  # Hi-Hat Closed (Bow)
-    13: 22  # Hi-Hat Closed (Edge)
-    14: 46  # Hi-Hat Open (Bow)
-    15: 26  # Hi-Hat Open (Edge)
-    16: 44  # Hi-Hat Pedal
-    17: 49  # Crash 1 (Bow)
-    18: 55  # Crash 1 (Edge)
-    19: 57  # Crash 2 (Bow)
-    20: 52  # Crash 2 (Edge)
-    21: 51  # Ride (Bow)
-    22: 59  # Ride (Edge)
-    23: 53  # Ride Bell
-    24: 54  # Tambourine
-    25: 56  # Cowbell
+    1: 38   # Snare head
+    2: 40   # Snare rim
+    3: 37   # Side stick
+    4: 44   # Pedal hi-hat
+    5: 42   # Closed hi-hat
+    6: 46   # Open hi-hat
+    7: 43   # Floor tom
+    8: 48   # High-mid tom
+    9: 51   # Ride
+    10: 53  # Ride bell
 
   default_velocity: 80
   note_duration_ticks: 50

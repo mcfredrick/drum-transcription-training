@@ -1,4 +1,4 @@
-# Inference Guide - Roland TD-17 Drum Transcription
+# Inference Guide - Standard Drum Kit Transcription
 
 Complete guide for using trained models to transcribe drum audio to MIDI.
 
@@ -13,12 +13,12 @@ Complete guide for using trained models to transcribe drum audio to MIDI.
 cd ~/Documents/drum-tranxn/drum_transcription
 
 uv run python scripts/transcribe.py \
-    --checkpoint /mnt/hdd/drum-tranxn/checkpoints_roland/best.ckpt \
+    --checkpoint /mnt/hdd/drum-tranxn/checkpoints/best.ckpt \
     --audio /path/to/your/audio.wav \
     --output output.mid
 ```
 
-**Output:** MIDI file with Roland TD-17 mapping (26 classes)
+**Output:** MIDI file with standard drum kit mapping (11 classes)
 
 ## Transcription Script
 
@@ -50,7 +50,7 @@ uv run python scripts/transcribe.py \
 **Single file:**
 ```bash
 uv run python scripts/transcribe.py \
-    --checkpoint /mnt/hdd/drum-tranxn/checkpoints_roland/roland-full-training-epoch=78-val_loss=0.0187.ckpt \
+    --checkpoint /mnt/hdd/drum-tranxn/checkpoints/drum-full-training-epoch=78-val_loss=0.0187.ckpt \
     --audio /mnt/hdd/drum-tranxn/e-gmd-v1.0.0/drummer1/session1/1_funk_120_beat_4-4.wav \
     --output funk_120_transcribed.mid
 ```
@@ -60,7 +60,7 @@ uv run python scripts/transcribe.py \
 #!/bin/bash
 # Process all WAV files in a directory
 
-CHECKPOINT="/mnt/hdd/drum-tranxn/checkpoints_roland/best.ckpt"
+CHECKPOINT="/mnt/hdd/drum-tranxn/checkpoints/best.ckpt"
 INPUT_DIR="/path/to/audio/files"
 OUTPUT_DIR="/path/to/midi/output"
 
@@ -99,14 +99,20 @@ uv run python scripts/transcribe.py \
 
 ### MIDI File Structure
 
-**Roland TD-17 mapping (26 MIDI notes):**
+**Standard drum kit mapping (11 MIDI notes):**
 - Kick: MIDI 36
 - Snare Head: MIDI 38
-- Snare X-Stick: MIDI 37
 - Snare Rim: MIDI 40
-- Tom 1 Head: MIDI 48
-- Tom 1 Rim: MIDI 50
-- *(see [ROLAND_MAPPING.md](ROLAND_MAPPING.md) for complete list)*
+- Side Stick: MIDI 37
+- Pedal Hi-Hat: MIDI 44
+- Closed Hi-Hat: MIDI 42
+- Open Hi-Hat: MIDI 46
+- Floor Tom: MIDI 43
+- High-Mid Tom: MIDI 48
+- Ride: MIDI 51
+- Ride Bell: MIDI 53
+
+*(see [DRUM_MAPPING.md](DRUM_MAPPING.md) for complete list)*
 
 **MIDI properties:**
 - Velocity: 80 (default)
@@ -117,13 +123,13 @@ uv run python scripts/transcribe.py \
 
 **Import transcribed MIDI into:**
 - **DAWs**: Ableton Live, Logic Pro, FL Studio, Reaper, etc.
-- **Drum software**: Superior Drummer, EZdrummer, Addictive Drums
-- **Roland TD-17 module**: Direct import to practice with your kit
+- **Drum software**: Superior Drummer, EZdrummer, Addictive Drums, General MIDI drum kits
+- **Electronic drum modules**: Most MIDI-compatible e-drums
 - **MIDI editors**: MuseScore, Sibelius, Guitar Pro
 
-## Using with Roland TD-17
+## Using with Electronic Drums
 
-### Import to TD-17 Module
+### Import to MIDI-Compatible Modules
 
 1. **Export MIDI from transcription:**
    ```bash
@@ -133,25 +139,23 @@ uv run python scripts/transcribe.py \
        --output song.mid
    ```
 
-2. **Transfer to SD card:**
-   - Copy `song.mid` to TD-17's SD card
-   - Path: `/ROLAND/TD-17/SONG/`
+2. **Transfer to module:**
+   - Most electronic drum modules support MIDI file import via USB or SD card
+   - Check your module's manual for specific instructions
 
-3. **Load on TD-17:**
-   - Insert SD card into TD-17
-   - Navigate to SONG mode
-   - Select imported MIDI file
+3. **Load and play:**
+   - Import the MIDI file to your module
+   - The standard General MIDI mapping should work with most e-drum kits
    - Play along with the transcription!
 
-### Mapping Verification
+### MIDI Mapping Notes
 
-The transcribed MIDI notes match Roland TD-17's default mapping:
-- **Snare head** → Pad 1 (center)
-- **Snare rim** → Pad 1 (rim)
-- **Kick** → Pad KD
-- **Toms** → Pads 2, 3, 4, 5
-- **Hi-hat** → Pad HH (bow/edge/pedal)
-- **Cymbals** → Pads CY1, CY2, CY3 (bow/edge/bell)
+The transcribed MIDI uses standard General MIDI drum notes:
+- **Kick** → MIDI 36 (Acoustic Bass Drum)
+- **Snare** → MIDI 38/40/37 (Snare variations)
+- **Hi-hat** → MIDI 42/44/46 (Closed/Pedal/Open)
+- **Toms** → MIDI 43/48 (Floor Tom/High-Mid Tom)
+- **Ride** → MIDI 51/53 (Ride/Bell)
 
 ## Onset Detection Tuning
 
@@ -264,11 +268,11 @@ CPU inference: 10-50x slower
 **Solution:**
 ```bash
 # List available checkpoints
-ls -lh /mnt/hdd/drum-tranxn/checkpoints_roland/full_training/
+ls -lh /mnt/hdd/drum-tranxn/checkpoints/full_training/
 
 # Use full absolute path
 uv run python scripts/transcribe.py \
-    --checkpoint /mnt/hdd/drum-tranxn/checkpoints_roland/full_training/best.ckpt \
+    --checkpoint /mnt/hdd/drum-tranxn/checkpoints/full_training/best.ckpt \
     --audio input.wav \
     --output output.mid
 ```
@@ -306,9 +310,9 @@ uv run python scripts/transcribe.py \
 **Cause:** Model trained on different data or MIDI mapping mismatch.
 
 **Solution:**
-1. Verify using Roland-trained checkpoint
+1. Verify using 11-class trained checkpoint
 2. Check MIDI mapping in output file
-3. Verify Roland TD-17 kit settings
+3. Verify drum module/software is set to General MIDI drums
 
 ### "Audio format not supported"
 
@@ -337,7 +341,7 @@ Test your model on the test set:
 
 ```bash
 uv run python scripts/evaluate.py \
-    --checkpoint /mnt/hdd/drum-tranxn/checkpoints_roland/best.ckpt \
+    --checkpoint /mnt/hdd/drum-tranxn/checkpoints/best.ckpt \
     --config configs/full_training_config.yaml
 ```
 
@@ -352,7 +356,7 @@ uv run python scripts/evaluate.py \
 Compare multiple checkpoints:
 
 ```bash
-for ckpt in /mnt/hdd/drum-tranxn/checkpoints_roland/full_training/*.ckpt; do
+for ckpt in /mnt/hdd/drum-tranxn/checkpoints/full_training/*.ckpt; do
     echo "Evaluating: $(basename $ckpt)"
     uv run python scripts/evaluate.py \
         --checkpoint "$ckpt" \
@@ -379,7 +383,7 @@ done
 
 **Find best checkpoint:**
 ```bash
-ls -lhS /mnt/hdd/drum-tranxn/checkpoints_roland/full_training/*.ckpt
+ls -lhS /mnt/hdd/drum-tranxn/checkpoints/full_training/*.ckpt
 # Look for lowest val_loss in filename
 ```
 
@@ -394,7 +398,7 @@ ls -lhS /mnt/hdd/drum-tranxn/checkpoints_roland/full_training/*.ckpt
 
 ## Example Workflows
 
-### Workflow 1: Practice with Roland TD-17
+### Workflow 1: Practice with Electronic Drums
 
 ```bash
 # 1. Transcribe your favorite song
@@ -403,10 +407,10 @@ uv run python scripts/transcribe.py \
     --audio favorite_song.wav \
     --output favorite_song.mid
 
-# 2. Copy to SD card
-cp favorite_song.mid /media/sdcard/ROLAND/TD-17/SONG/
+# 2. Copy to your e-drum module (USB/SD card)
+cp favorite_song.mid /path/to/module/storage/
 
-# 3. Load on TD-17 and play along!
+# 3. Load on your module and play along!
 ```
 
 ### Workflow 2: Create Drum Tracks
@@ -442,11 +446,11 @@ uv run python scripts/transcribe.py \
 
 - **Improve transcription:** Train longer or with more data ([TRAINING.md](TRAINING.md))
 - **Fine-tune model:** Adjust hyperparameters ([docs/HYPERPARAMETER_OPTIMIZATION.md](docs/HYPERPARAMETER_OPTIMIZATION.md))
-- **Custom mapping:** Modify MIDI mapping ([ROLAND_MAPPING.md](ROLAND_MAPPING.md))
+- **Custom mapping:** Modify MIDI mapping ([DRUM_MAPPING.md](DRUM_MAPPING.md))
 
 ## Additional Resources
 
 - **[SETUP.md](SETUP.md)** - Installation guide
 - **[TRAINING.md](TRAINING.md)** - Training models
-- **[ROLAND_MAPPING.md](ROLAND_MAPPING.md)** - Drum mapping details
+- **[DRUM_MAPPING.md](DRUM_MAPPING.md)** - Drum mapping details
 - **[docs/HYPERPARAMETER_OPTIMIZATION.md](docs/HYPERPARAMETER_OPTIMIZATION.md)** - Tuning guide

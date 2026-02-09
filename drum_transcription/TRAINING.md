@@ -1,6 +1,6 @@
-# Training Guide - Roland TD-17 Drum Transcription
+# Training Guide - Standard Drum Kit Transcription
 
-Complete guide for training drum transcription models with Roland TD-17 mapping.
+Complete guide for training drum transcription models with 11-class standard drum kit mapping.
 
 ## Quick Start
 
@@ -9,15 +9,15 @@ Complete guide for training drum transcription models with Roland TD-17 mapping.
 **Start full training:**
 ```bash
 cd ~/Documents/drum-tranxn/drum_transcription
-./auto_train_roland.sh
+./auto_train.sh
 ```
 
 This will:
 - Use all E-GMD data (~1200+ files)
 - Train for 150 epochs with early stopping
-- Save checkpoints to `/mnt/hdd/drum-tranxn/checkpoints_roland/`
+- Save checkpoints to `/mnt/hdd/drum-tranxn/checkpoints/`
 - Log metrics to TensorBoard
-- Target 26 Roland TD-17 drum classes
+- Target 11 standard drum kit classes
 
 ## Training Configurations
 
@@ -69,7 +69,7 @@ uv run python scripts/train.py --config configs/medium_test_config.yaml
 **Purpose:** Production model training with full dataset.
 
 ```bash
-./auto_train_roland.sh
+./auto_train.sh
 ```
 
 **Settings:**
@@ -104,13 +104,15 @@ training:
   precision: "16-mixed"
 
 model:
-  n_classes: 26  # Roland TD-17
+  n_classes: 11  # Standard drum kit
   conv_filters: [32, 64, 128, 256]
   hidden_size: 256
   num_gru_layers: 3
   dropout_cnn: 0.3
   dropout_gru: 0.4
   bidirectional: true
+
+class_weights: [0.5, 0.5, 1.5, 3.5, 0.8, 0.9, 15.0, 1.5, 1.6, 1.0, 13.0]
 ```
 
 ### When to Re-optimize
@@ -131,10 +133,10 @@ Launch TensorBoard to monitor training in real-time:
 
 ```bash
 # Full training logs
-tensorboard --logdir=/mnt/hdd/drum-tranxn/logs_roland
+tensorboard --logdir=/mnt/hdd/drum-tranxn/logs
 
 # Specific experiment
-tensorboard --logdir=/mnt/hdd/drum-tranxn/logs_roland/full_training
+tensorboard --logdir=/mnt/hdd/drum-tranxn/logs/full_training
 ```
 
 Open browser to: `http://localhost:6006`
@@ -176,7 +178,7 @@ Training automatically resumes from the last checkpoint if interrupted:
 
 ```bash
 # Just rerun the same command
-./auto_train_roland.sh
+./auto_train.sh
 ```
 
 The trainer will:
@@ -191,7 +193,7 @@ To resume from a specific checkpoint:
 ```bash
 uv run python scripts/train.py \
     --config configs/full_training_config.yaml \
-    --checkpoint /mnt/hdd/drum-tranxn/checkpoints_roland/roland-full-training-epoch=45-val_loss=0.0234.ckpt
+    --checkpoint /mnt/hdd/drum-tranxn/checkpoints/drum-full-training-epoch=45-val_loss=0.0234.ckpt
 ```
 
 ## Checkpoints
@@ -204,11 +206,11 @@ uv run python scripts/train.py \
 
 **Location:**
 ```
-/mnt/hdd/drum-tranxn/checkpoints_roland/
+/mnt/hdd/drum-tranxn/checkpoints/
 ├── full_training/
-│   ├── roland-full-training-epoch=78-val_loss=0.0187.ckpt  # Best
-│   ├── roland-full-training-epoch=92-val_loss=0.0191.ckpt
-│   ├── roland-full-training-epoch=105-val_loss=0.0193.ckpt
+│   ├── drum-full-training-epoch=78-val_loss=0.0187.ckpt  # Best
+│   ├── drum-full-training-epoch=92-val_loss=0.0191.ckpt
+│   ├── drum-full-training-epoch=105-val_loss=0.0193.ckpt
 │   └── last.ckpt                                           # Latest
 ```
 
@@ -348,8 +350,8 @@ augmentation:
 
 **Solution:** Re-run preprocessing:
 ```bash
-uv run python scripts/preprocess_roland.py \
-    --config configs/roland_config.yaml
+uv run python scripts/preprocess.py \
+    --config configs/drum_config.yaml
 ```
 
 ## Advanced Options
